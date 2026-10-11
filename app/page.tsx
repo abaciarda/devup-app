@@ -8,7 +8,7 @@ import HomeDocumentMetadata from "@/components/i18n/home-document-metadata";
 export const metadata: Metadata = {
   title: "devup — Daily tech news for developers",
   description:
-    "A five-minute daily email with software and AI news, career leads, contest schedules, and coding problems worth solving.",
+    "A five-minute daily email summarizing technology, software, and AI news from developer communities.",
 };
 
 export default function Home() {

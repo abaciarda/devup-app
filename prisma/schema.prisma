@@ -7,11 +7,74 @@ datasource db {
   provider = "postgresql"
 }
 
+enum GenerationStatus {
+  draft
+  ready
+  failed
+}
+
 model Source {
-  id        Int      @id @default(autoincrement())
-  key       String   @unique
-  enabled   Boolean  @default(true)
-  config    Json     @default("{}")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        Int       @id @default(autoincrement())
+  key       String    @unique
+  enabled   Boolean   @default(true)
+  config    Json      @default("{}")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  rawItems  RawItem[]
+}
+
+model RawItem {
+  id            Int       @id @default(autoincrement())
+  sourceId      Int
+  source        Source    @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+  externalId    String
+  title         String
+  originalUrl   String
+  normalizedUrl String
+  excerpt       String    @default("")
+  publishedAt   DateTime?
+  fetchedAt     DateTime  @default(now())
+  score         Float     @default(0)
+  tags          String[]  @default([])
+  usedIssueId   Int?
+  usedIssue     Issue?    @relation(fields: [usedIssueId], references: [id], onDelete: Restrict)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([sourceId, externalId])
+  @@index([normalizedUrl])
+  @@index([usedIssueId, publishedAt])
+}
+
+model Issue {
+  id                 Int              @id @default(autoincrement())
+  editionDate        DateTime         @unique @db.Date
+  generationStatus   GenerationStatus @default(draft)
+  content            Json?
+  generationModel    String?
+  generationUsage    Json?
+  generationError    String?
+  publishedAt        DateTime?
+  deliveryStartedAt  DateTime?
+  deliveryFinishedAt DateTime?
+  rawItems           RawItem[]
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@index([publishedAt, editionDate])
+}
+
+model RateLimit {
+  key             String   @id
+  hits            Int
+  windowStartedAt DateTime @db.Timestamptz(3)
+  expiresAt       DateTime @db.Timestamptz(3)
+
+  @@index([expiresAt])
+}
+
+model PipelineLease {
+  key        String   @id
+  ownerToken String
+  expiresAt  DateTime @db.Timestamptz(3)
 }

@@ -44,7 +44,7 @@ export default function OpenGraphImage() {
         Read it in five minutes.
       </div>
       <div style={{ fontSize: 25, marginTop: 36, color: "#6e6e73" }}>
-        Software, AI, careers and coding contests.
+        Technology, software and AI news.
       </div>
     </div>,
     size,

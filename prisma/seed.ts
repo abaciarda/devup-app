@@ -12,7 +12,7 @@ const db = new PrismaClient({
   adapter: new PrismaPg({ connectionString, max: 1 }),
 });
 
-const sourceKeys = ["hackernews", "devto", "lobsters", "hn_hiring"] as const;
+const sourceKeys = ["hackernews", "devto", "lobsters"] as const;
 
 async function main(): Promise<void> {
   for (const key of sourceKeys) {

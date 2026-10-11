@@ -38,7 +38,7 @@ const translations: Record<
       ],
       [
         "Geliştiricilerin sorduğu sorular",
-        "Son sohbetlerde kariyer, öğrenme yolları ve kullanılan araçlar öne çıkıyor.",
+        "Son sohbetlerde yazılım güvenilirliği, yeni teknolojiler ve geliştiricilerin kullandığı araçlar öne çıkıyor.",
       ],
     ],
   },

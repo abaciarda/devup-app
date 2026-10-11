@@ -1,6 +1,6 @@
-import { PrismaClient } from "../generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import "dotenv/config";
+import { PrismaClient } from "../generated/prisma/client";
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -24,7 +24,7 @@ async function main(): Promise<void> {
     select: { key: true, enabled: true },
   });
 
-  const expectedKeys = ["hackernews", "devto", "lobsters", "hn_hiring"];
+  const expectedKeys = ["hackernews", "devto", "lobsters"];
   const actualKeys = new Set(sources.map((source) => source.key));
   const missing = expectedKeys.filter((key) => !actualKeys.has(key));
 
@@ -32,7 +32,7 @@ async function main(): Promise<void> {
     throw new Error(`Missing source rows: ${missing.join(", ")}`);
   }
 
-  console.log("Database connection OK. All four initial source keys exist.");
+  console.log("Database connection OK. All three initial source keys exist.");
   console.table(sources);
 }
 

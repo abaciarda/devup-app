@@ -61,7 +61,7 @@ export const editions: readonly Edition[] = [
         source: "Reddit",
         title: "The questions developers are asking",
         summary:
-          "Recent discussions cover career growth, learning paths, and the tools people rely on.",
+          "Recent discussions cover software reliability, new technologies, and the tools developers rely on.",
         url: "https://www.reddit.com/r/programming/",
       },
     ],

@@ -16,7 +16,11 @@
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
     "db:check": "tsx scripts/check-db.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "content:check": "tsx scripts/check-content.ts",
+    "db:check-editorial": "tsx scripts/check-editorial.ts",
+    "foundation:check": "node --conditions=react-server --import tsx scripts/check-foundations.ts",
+    "db:check-coordination": "node --conditions=react-server --import tsx scripts/check-coordination.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",

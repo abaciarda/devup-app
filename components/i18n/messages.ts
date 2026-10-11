@@ -4,7 +4,7 @@ export const messages = {
   en: {
     pageTitle: "devup — Daily tech news for developers",
     pageDescription:
-      "A five-minute daily email with software and AI news, career leads, contest schedules, and coding problems worth solving.",
+      "A five-minute daily email summarizing technology, software, and AI news from developer communities.",
     skip: "Skip to content",
     homeLabel: "devup home",
     navLabel: "Main navigation",
@@ -15,7 +15,7 @@ export const messages = {
     heroHeadlineFirst: "Your daily tech briefing.",
     heroHeadlineSecond: "Read it in five minutes.",
     heroDescription:
-      "Software and AI news, career opportunities, contest schedules, and coding problems worth your time. One considered email, every morning.",
+      "Technology, software, and AI news worth your time, summarized from the places developers read. One considered email, every morning.",
     sampleLink: "See what’s in the email",
     sourcesLabel: "FROM THE PLACES DEVELOPERS READ",
     todayEyebrow: "TODAY’S ISSUE",
@@ -30,7 +30,7 @@ export const messages = {
     archiveDescription:
       "Browse earlier emails and catch up on the stories you missed.",
     footerDescription:
-      "A free, five-minute daily read covering software, AI, developer careers, contests, and coding practice.",
+      "A free, five-minute daily read summarizing technology, software, and AI news.",
     footerSubscribe: "Get the daily email",
     footerDailyRead: "On the site",
     footerPrevious: "Past issues",
@@ -58,10 +58,7 @@ export const messages = {
     needConsent: "Tick the box to continue.",
     sending: "Sending…",
     retry: "Try again",
-    jobLabel: "Job",
-    jobLink: "View job",
     newsSection: "Top stories",
-    jobsSection: "Jobs & careers",
     issueReadAll: "Read today’s full issue",
     archiveAll: "Full archive",
     archiveListTitle: "All issues",
@@ -74,7 +71,7 @@ export const messages = {
     confirmSuccess: "Your subscription is confirmed.",
     confirmFailure: "This link is invalid or has expired.",
     confirmDescription:
-      "The daily email brings software news and career opportunities together in a short read.",
+      "The daily email brings technology, software, and AI news together in a short read.",
     unsubscribeSuccess: "You’ve been unsubscribed.",
     unsubscribeUndo: "By mistake? Subscribe again",
     privacyTitle: "Privacy and data notice",
@@ -97,14 +94,10 @@ export const messages = {
     sourceHackerNews: "Hacker News",
     sourceDevto: "Dev.to",
     sourceLobsters: "Lobsters",
-    sourceHnHiring: "HN Who’s Hiring",
-    sourceTrJobs: "Company careers",
     categoryEngineering: "Engineering",
     categoryAi: "AI",
     categoryTools: "Tools",
     categorySecurity: "Security",
-    categoryCareer: "Career",
-    categoryJob: "Job",
     categoryLabel: "Category",
     emailLanguageTurkish: "Your daily email will be in Turkish.",
     emailLanguageEnglish: "Your daily email will be in English.",
@@ -112,7 +105,7 @@ export const messages = {
   tr: {
     pageTitle: "devup — Yazılımcılar için günlük teknoloji özeti",
     pageDescription:
-      "Yazılım ve yapay zekâ haberleri, kariyer fırsatları, yarışma takvimi ve çözmeye değer problemler. Her gün beş dakikalık bir e-posta.",
+      "Geliştirici topluluklarından teknoloji, yazılım ve yapay zekâ haberleri. Her gün beş dakikalık bir e-posta özeti.",
     skip: "İçeriğe geç",
     homeLabel: "devup ana sayfa",
     navLabel: "Ana gezinme",
@@ -123,7 +116,7 @@ export const messages = {
     heroHeadlineFirst: "Günün teknoloji özeti.",
     heroHeadlineSecond: "Beş dakikada okuyun.",
     heroDescription:
-      "Yazılım ve yapay zekâ haberleri, kariyer fırsatları, yarışma takvimi ve çözmeye değer problemler. Her sabah tek bir özenli e-postada.",
+      "Geliştiricilerin takip ettiği kaynaklardan teknoloji, yazılım ve yapay zekâ haberleri. Her sabah tek bir özenli e-postada.",
     sampleLink: "E-postada neler var?",
     sourcesLabel: "GELİŞTİRİCİLERİN TAKİP ETTİĞİ KAYNAKLARDAN",
     todayEyebrow: "BUGÜNÜN BÜLTENİ",
@@ -138,7 +131,7 @@ export const messages = {
     archiveDescription:
       "Önceki e-postaları açın, kaçırdığınız haberleri okuyun.",
     footerDescription:
-      "Yazılım, yapay zekâ, kariyer, yarışmalar ve çözmeye değer problemlerden beş dakikalık günlük bir seçki.",
+      "Teknoloji, yazılım ve yapay zekâ haberlerinden beş dakikalık ücretsiz bir günlük seçki.",
     footerSubscribe: "Günlük e-postayı al",
     footerDailyRead: "Sitede gezin",
     footerPrevious: "Önceki bültenler",
@@ -168,10 +161,7 @@ export const messages = {
     needConsent: "Devam etmek için onay kutusunu işaretleyin.",
     sending: "Gönderiliyor…",
     retry: "Tekrar dene",
-    jobLabel: "İş ilanı",
-    jobLink: "İlana git",
     newsSection: "Öne çıkanlar",
-    jobsSection: "Kariyer ve iş ilanları",
     issueReadAll: "Bugünün tüm bültenini oku",
     archiveAll: "Tüm arşiv",
     archiveListTitle: "Tüm bültenler",
@@ -185,7 +175,7 @@ export const messages = {
     confirmSuccess: "Aboneliğiniz onaylandı.",
     confirmFailure: "Bağlantı geçersiz veya süresi dolmuş.",
     confirmDescription:
-      "Günlük e-postada yazılım haberleri ve kariyer fırsatları kısa bir özette buluşuyor.",
+      "Günlük e-postada teknoloji, yazılım ve yapay zekâ haberleri kısa bir özette buluşuyor.",
     unsubscribeSuccess: "Abonelikten çıktınız.",
     unsubscribeUndo: "Yanlışlıkla mı? Tekrar abone ol",
     privacyTitle: "Gizlilik ve kişisel veriler",
@@ -208,14 +198,10 @@ export const messages = {
     sourceHackerNews: "Hacker News",
     sourceDevto: "Dev.to",
     sourceLobsters: "Lobsters",
-    sourceHnHiring: "HN Who’s Hiring",
-    sourceTrJobs: "Şirket kariyer sayfası",
     categoryEngineering: "Yazılım",
     categoryAi: "Yapay zekâ",
     categoryTools: "Araçlar",
     categorySecurity: "Güvenlik",
-    categoryCareer: "Kariyer",
-    categoryJob: "İş ilanı",
     categoryLabel: "Kategori",
     emailLanguageTurkish: "Günlük e-postanız Türkçe gönderilecek.",
     emailLanguageEnglish: "Günlük e-postanız İngilizce gönderilecek.",
