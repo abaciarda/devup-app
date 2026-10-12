@@ -24,7 +24,11 @@
     "sources:check": "node --conditions=react-server --import tsx scripts/check-sources.ts",
     "db:check-ingestion": "node --conditions=react-server --import tsx scripts/check-ingestion.ts",
     "sources:probe": "node --conditions=react-server --import tsx scripts/probe-sources.ts",
-    "sources:refresh": "node --conditions=react-server --import tsx scripts/refresh-sources.ts"
+    "sources:refresh": "node --conditions=react-server --import tsx scripts/refresh-sources.ts",
+    "draft:check": "node --conditions=react-server --import tsx scripts/check-drafts.ts",
+    "db:check-drafts": "node --conditions=react-server --import tsx scripts/check-draft-storage.ts",
+    "issue:generate": "node --conditions=react-server --import tsx scripts/generate-issue.ts",
+    "admin:check": "node --conditions=react-server --import tsx scripts/check-admin.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",
