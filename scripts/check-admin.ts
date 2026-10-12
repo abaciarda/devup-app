@@ -98,6 +98,7 @@ const form = (body: string, origin = env.SITE_URL) =>
     body,
   });
 assert.equal(hasAdminOrigin(form("password=anything")), true);
+assert.equal(hasAdminOrigin(form("password=anything", "null")), false);
 assert.equal(
   hasAdminOrigin(form("password=anything", "https://other.example")),
   false,
@@ -122,6 +123,7 @@ assert.equal(
   null,
 );
 const response = privateResponse(new Response("private"));
+assert.equal(response.headers.get("Referrer-Policy"), "same-origin");
 assert.ok(response.headers.get("Cache-Control")?.includes("no-store"));
 assert.ok(response.headers.get("X-Robots-Tag")?.includes("noindex"));
 console.log(

@@ -6,7 +6,7 @@ import { isSameOrigin } from "./security";
 export function privateResponse<T extends Response>(response: T): T {
   response.headers.set("Cache-Control", "private, no-store, max-age=0");
   response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
-  response.headers.set("Referrer-Policy", "no-referrer");
+  response.headers.set("Referrer-Policy", "same-origin");
   response.headers.set("X-Content-Type-Options", "nosniff");
   return response;
 }
