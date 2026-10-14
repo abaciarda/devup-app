@@ -1,4 +1,4 @@
-import type { Candidate } from "../lib/server/candidates";
+import type { Candidate } from "../lib/server/sources/candidates";
 
 export function draftFixture(
   now = new Date("2099-04-01T09:00:00.000Z"),

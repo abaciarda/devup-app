@@ -1,4 +1,4 @@
-import { sourceKeys } from "../lib/server/candidates";
+import { sourceKeys } from "../lib/server/sources/candidates";
 import { fetchSource } from "../lib/server/sources/adapters";
 import { sourceErrorCode } from "../lib/server/sources/http";
 import { hasUsefulSourceText } from "../lib/server/sources/text";

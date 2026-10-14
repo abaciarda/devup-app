@@ -1,17 +1,17 @@
-import { verifyAdminPassword } from "@/lib/server/admin-credentials";
-import { adminEnv } from "@/lib/server/admin-env";
+import { verifyAdminPassword } from "@/lib/server/admin/credentials";
+import { adminEnv } from "@/lib/server/admin/env";
 import {
   adminRedirect,
   hasAdminOrigin,
   privateResponse,
   readLoginPassword,
-} from "@/lib/server/admin-http";
+} from "@/lib/server/admin/http";
 import {
   adminCookieName,
   adminCookieOptions,
   createAdminSession,
-} from "@/lib/server/admin-session";
-import { consumeRateLimit } from "@/lib/server/rate-limit";
+} from "@/lib/server/admin/session";
+import { consumeRateLimit } from "@/lib/server/shared/rate-limit";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {

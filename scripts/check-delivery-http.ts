@@ -7,10 +7,10 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { Pool } from "pg";
 import { Webhook } from "svix";
-import { getDb } from "../lib/server/db";
-import { createAdminSession } from "../lib/server/admin-session";
-import { createSubscriptionProof } from "../lib/server/subscriber-links";
-import { subscriptionEnvSchema } from "../lib/server/subscription-env";
+import { getDb } from "../lib/server/database/client";
+import { createAdminSession } from "../lib/server/admin/session";
+import { createSubscriptionProof } from "../lib/server/subscriptions/links";
+import { subscriptionEnvSchema } from "../lib/server/subscriptions/env";
 import { emailFixture } from "./email-fixture";
 
 async function main() {

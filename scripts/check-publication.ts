@@ -1,23 +1,23 @@
 import { NextRequest } from "next/server";
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
-import { hashAdminPassword } from "../lib/server/admin-credentials";
-import { adminEnvSchema } from "../lib/server/admin-env";
+import { hashAdminPassword } from "../lib/server/admin/credentials";
+import { adminEnvSchema } from "../lib/server/admin/env";
 import {
   authorizeAdminMutation,
   mutationNoticeText,
   readMutationForm,
-} from "../lib/server/admin-mutations";
+} from "../lib/server/admin/mutations";
 import {
   adminCookieName,
   createAdminSession,
-} from "../lib/server/admin-session";
-import { validateModelDraft } from "../lib/server/draft-content";
+} from "../lib/server/admin/session";
+import { validateModelDraft } from "../lib/server/issues/draft-content";
 import {
   issueReviewVersion,
   publicationApprovalSchema,
   sourceSwitchSchema,
-} from "../lib/server/publication";
+} from "../lib/server/issues/publication";
 import { draftFixture } from "./draft-fixture";
 
 const env = adminEnvSchema.parse({

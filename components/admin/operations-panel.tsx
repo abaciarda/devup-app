@@ -1,6 +1,6 @@
-import { requireAdmin } from "@/lib/server/admin-auth";
-import { getDb } from "@/lib/server/db";
-import { launchReadiness } from "@/lib/server/launch-readiness";
+import { requireAdmin } from "@/lib/server/admin/auth";
+import { getDb } from "@/lib/server/database/client";
+import { launchReadiness } from "@/lib/server/operations/launch-readiness";
 import Link from "next/link";
 
 export default async function OperationsPanel() {

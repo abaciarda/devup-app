@@ -1,9 +1,9 @@
 import "dotenv/config";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { getDb } from "../lib/server/db";
-import { cleanupInTransaction } from "../lib/server/cleanup";
-import { reserveScheduledGeneration } from "../lib/server/pipeline";
+import { getDb } from "../lib/server/database/client";
+import { cleanupInTransaction } from "../lib/server/operations/cleanup";
+import { reserveScheduledGeneration } from "../lib/server/operations/pipeline";
 import { emailFixture } from "./email-fixture";
 
 class RollbackCheck extends Error {}

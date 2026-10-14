@@ -1,5 +1,5 @@
 import "server-only";
-import { parseSourceFetchUrl, type SourceKey } from "../validation";
+import { parseSourceFetchUrl, type SourceKey } from "../shared/validation";
 
 export class SourceFetchError extends Error {
   constructor(

@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { hashAdminPassword } from "../lib/server/admin-credentials";
+import { hashAdminPassword } from "../lib/server/admin/credentials";
 
 async function main() {
   let input = "";

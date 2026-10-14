@@ -1,10 +1,10 @@
 import { z } from "zod";
-import { authorizeScheduledRequest } from "@/lib/server/operations-http";
+import { authorizeScheduledRequest } from "@/lib/server/operations/http";
 import {
   readSubscriptionForm,
   subscriptionResponse,
-} from "@/lib/server/subscription-http";
-import { runPipeline } from "@/lib/server/pipeline";
+} from "@/lib/server/subscriptions/http";
+import { runPipeline } from "@/lib/server/operations/pipeline";
 
 export const maxDuration = 300;
 export async function POST(request: Request) {

@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import EditionContent from "@/components/digest/edition-content";
-import { loadPublishedIssue } from "@/lib/server/published-issues";
+import { loadPublishedIssue } from "@/lib/server/issues/published";
 
 type Props = { params: Promise<{ slug: string }> };
 

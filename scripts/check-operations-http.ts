@@ -6,13 +6,13 @@ import { promisify } from "node:util";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { Pool } from "pg";
-import { getDb } from "../lib/server/db";
-import { runPipeline } from "../lib/server/pipeline";
+import { getDb } from "../lib/server/database/client";
+import { runPipeline } from "../lib/server/operations/pipeline";
 import {
   acquirePipelineLease,
   releasePipelineLease,
-} from "../lib/server/pipeline-lease";
-import { createAdminSession } from "../lib/server/admin-session";
+} from "../lib/server/operations/lease";
+import { createAdminSession } from "../lib/server/admin/session";
 import { editionDateForNow } from "../lib/edition-date";
 import { emailFixture } from "./email-fixture";
 

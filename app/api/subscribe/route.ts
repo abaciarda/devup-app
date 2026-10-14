@@ -1,19 +1,19 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { renderConfirmationEmail } from "@/lib/email/render";
-import { emailEnv } from "@/lib/server/email-env";
-import { getDb } from "@/lib/server/db";
-import { randomToken } from "@/lib/server/security";
-import { subscriptionEnv } from "@/lib/server/subscription-env";
+import { emailEnv } from "@/lib/server/delivery/sender-env";
+import { getDb } from "@/lib/server/database/client";
+import { randomToken } from "@/lib/server/shared/security";
+import { subscriptionEnv } from "@/lib/server/subscriptions/env";
 import {
   limitSignup,
   readSubscriptionForm,
   subscriptionResponse,
-} from "@/lib/server/subscription-http";
+} from "@/lib/server/subscriptions/http";
 import {
   signupSchema,
   subscribeInTransaction,
-} from "@/lib/server/subscriptions";
+} from "@/lib/server/subscriptions/storage";
 
 export async function POST(request: Request) {
   try {

@@ -1,15 +1,15 @@
 import "dotenv/config";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { loadCandidatePool } from "../lib/server/candidates";
-import { getDb } from "../lib/server/db";
+import { loadCandidatePool } from "../lib/server/sources/candidates";
+import { getDb } from "../lib/server/database/client";
 import {
   acquirePipelineLease,
   commitUnderPipelineLease,
   releasePipelineLease,
-} from "../lib/server/pipeline-lease";
-import { persistSourceBatch } from "../lib/server/refresh-sources";
-import { rawItemInputSchema } from "../lib/server/validation";
+} from "../lib/server/operations/lease";
+import { persistSourceBatch } from "../lib/server/sources/refresh";
+import { rawItemInputSchema } from "../lib/server/shared/validation";
 
 const db = getDb();
 const rollback = new Error("Rollback Task 04 verification");

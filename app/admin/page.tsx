@@ -1,5 +1,5 @@
-import { mutationNoticeText } from "@/lib/server/admin-mutations";
-import { listAdminIssues, listAdminSources } from "@/lib/server/admin-preview";
+import { mutationNoticeText } from "@/lib/server/admin/mutations";
+import { listAdminIssues, listAdminSources } from "@/lib/server/admin/preview";
 import Link from "next/link";
 import { Suspense } from "react";
 import DeliveryPanel from "@/components/admin/delivery-panel";

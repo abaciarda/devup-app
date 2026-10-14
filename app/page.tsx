@@ -5,7 +5,7 @@ import Hero from "@/components/home/hero";
 import TodaySection from "@/components/home/today-section";
 import ArchiveSection from "@/components/home/archive-section";
 import HomeDocumentMetadata from "@/components/i18n/home-document-metadata";
-import { loadHomeIssues } from "@/lib/server/published-issues";
+import { loadHomeIssues } from "@/lib/server/issues/published";
 
 export const metadata: Metadata = {
   title: "devup — Daily tech news for developers",

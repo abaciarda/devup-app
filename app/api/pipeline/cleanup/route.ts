@@ -1,6 +1,6 @@
-import { authorizeScheduledRequest } from "@/lib/server/operations-http";
-import { subscriptionResponse } from "@/lib/server/subscription-http";
-import { runCleanup } from "@/lib/server/cleanup";
+import { authorizeScheduledRequest } from "@/lib/server/operations/http";
+import { subscriptionResponse } from "@/lib/server/subscriptions/http";
+import { runCleanup } from "@/lib/server/operations/cleanup";
 
 export const maxDuration = 60;
 export async function POST(request: Request) {

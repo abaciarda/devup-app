@@ -1,13 +1,13 @@
 import { z } from "zod";
-import { handleSubscriptionAction } from "@/lib/server/subscription-actions";
+import { handleSubscriptionAction } from "@/lib/server/subscriptions/actions";
 import {
   readSubscriptionForm,
   subscriptionResponse,
-} from "@/lib/server/subscription-http";
-import { subscriptionEnv } from "@/lib/server/subscription-env";
-import { verifySubscriberLink } from "@/lib/server/subscriber-links";
-import { unsubscribeInTransaction } from "@/lib/server/subscriptions";
-import { getDb } from "@/lib/server/db";
+} from "@/lib/server/subscriptions/http";
+import { subscriptionEnv } from "@/lib/server/subscriptions/env";
+import { verifySubscriberLink } from "@/lib/server/subscriptions/links";
+import { unsubscribeInTransaction } from "@/lib/server/subscriptions/storage";
+import { getDb } from "@/lib/server/database/client";
 
 export async function POST(request: Request) {
   const url = new URL(request.url);

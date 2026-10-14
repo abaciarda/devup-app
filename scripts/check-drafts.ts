@@ -3,12 +3,12 @@ import {
   buildDraftPrompt,
   modelEvidencePassages,
   validateModelDraft,
-} from "../lib/server/draft-content";
+} from "../lib/server/issues/draft-content";
 import {
   generateBilingualDraft,
   GenerationFailure,
-} from "../lib/server/gemini";
-import { generationEnvSchema } from "../lib/server/generation-env";
+} from "../lib/server/issues/gemini";
+import { generationEnvSchema } from "../lib/server/issues/generation-env";
 import { draftFixture } from "./draft-fixture";
 
 const fixture = draftFixture();

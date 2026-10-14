@@ -1,18 +1,18 @@
 import "dotenv/config";
 import assert from "node:assert/strict";
-import { getDb } from "../lib/server/db";
-import { validateModelDraft } from "../lib/server/draft-content";
+import { getDb } from "../lib/server/database/client";
+import { validateModelDraft } from "../lib/server/issues/draft-content";
 import {
   readArchiveFromDatabase,
   readHomeFromDatabase,
   readIssueFromDatabase,
   readSitemapFromDatabase,
-} from "../lib/server/published-queries";
+} from "../lib/server/issues/queries";
 import {
   acquirePipelineLease,
   releasePipelineLease,
   renewPipelineLease,
-} from "../lib/server/pipeline-lease";
+} from "../lib/server/operations/lease";
 import { draftFixture } from "./draft-fixture";
 
 class RollbackCheck extends Error {}

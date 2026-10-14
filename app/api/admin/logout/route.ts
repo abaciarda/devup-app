@@ -2,12 +2,12 @@ import {
   adminRedirect,
   hasAdminOrigin,
   privateResponse,
-} from "@/lib/server/admin-http";
+} from "@/lib/server/admin/http";
 import {
   adminCookieName,
   adminCookieOptions,
   verifyAdminSession,
-} from "@/lib/server/admin-session";
+} from "@/lib/server/admin/session";
 import type { NextRequest } from "next/server";
 
 export async function POST(request: NextRequest) {

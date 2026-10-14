@@ -1,7 +1,7 @@
 import "dotenv/config";
-import { getDb } from "../lib/server/db";
-import { generateIssue } from "../lib/server/generate-issue";
-import { PipelineLeaseLostError } from "../lib/server/pipeline-lease";
+import { getDb } from "../lib/server/database/client";
+import { generateIssue } from "../lib/server/issues/generate";
+import { PipelineLeaseLostError } from "../lib/server/operations/lease";
 
 async function main() {
   try {

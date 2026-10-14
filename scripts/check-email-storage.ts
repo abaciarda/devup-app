@@ -1,7 +1,7 @@
 import "dotenv/config";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { getDb } from "../lib/server/db";
+import { getDb } from "../lib/server/database/client";
 import { emailFixture } from "./email-fixture";
 import { frozenEmailSchema } from "../lib/email/contracts";
 

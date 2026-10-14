@@ -3,20 +3,20 @@ import { randomBytes } from "node:crypto";
 import {
   hashAdminPassword,
   verifyAdminPassword,
-} from "../lib/server/admin-credentials";
-import { adminEnvSchema } from "../lib/server/admin-env";
+} from "../lib/server/admin/credentials";
+import { adminEnvSchema } from "../lib/server/admin/env";
 import {
   hasAdminOrigin,
   privateResponse,
   readLoginPassword,
-} from "../lib/server/admin-http";
+} from "../lib/server/admin/http";
 import {
   adminCookieName,
   adminCookieOptions,
   createAdminSession,
   sessionSeconds,
   verifyAdminSession,
-} from "../lib/server/admin-session";
+} from "../lib/server/admin/session";
 
 const password = "fixture-only-password-never-use";
 const hash = await hashAdminPassword(password);

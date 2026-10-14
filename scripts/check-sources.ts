@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { prepareCandidates } from "../lib/server/candidates";
+import { prepareCandidates } from "../lib/server/sources/candidates";
 import { fetchSource } from "../lib/server/sources/adapters";
 import { fetchSourceJson, SourceFetchError } from "../lib/server/sources/http";
 import {

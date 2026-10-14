@@ -1,4 +1,4 @@
-import { readAdminDelivery } from "@/lib/server/admin-delivery";
+import { readAdminDelivery } from "@/lib/server/admin/delivery";
 
 export default async function DeliveryPanel() {
   const data = await readAdminDelivery();

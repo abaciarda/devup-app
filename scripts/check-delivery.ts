@@ -1,14 +1,14 @@
 import assert from "node:assert/strict";
 import { randomBytes, randomUUID } from "node:crypto";
 import { Webhook } from "svix";
-import { resendProvider } from "../lib/server/resend-provider";
-import { deliveryDecision, retryWindowMs } from "../lib/server/delivery-policy";
+import { resendProvider } from "../lib/server/delivery/resend-provider";
+import { deliveryDecision, retryWindowMs } from "../lib/server/delivery/policy";
 import {
   verifyEmailWebhook,
   readWebhookBody,
-} from "../lib/server/webhook-verification";
-import { emailEventSchema } from "../lib/server/delivery-webhooks";
-import { deliveryEnvSchema } from "../lib/server/delivery-env";
+} from "../lib/server/delivery/webhook-verification";
+import { emailEventSchema } from "../lib/server/delivery/webhooks";
+import { deliveryEnvSchema } from "../lib/server/delivery/env";
 import type { FrozenEmail } from "../lib/email/contracts";
 
 async function main() {

@@ -1,10 +1,10 @@
-import { privateResponse } from "@/lib/server/admin-http";
+import { privateResponse } from "@/lib/server/admin/http";
 import {
   adminCookieName,
   verifyAdminSession,
-} from "@/lib/server/admin-session";
+} from "@/lib/server/admin/session";
 import { NextResponse, type NextRequest } from "next/server";
-import { subscriptionResponse } from "@/lib/server/subscription-http";
+import { subscriptionResponse } from "@/lib/server/subscriptions/http";
 
 export function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;

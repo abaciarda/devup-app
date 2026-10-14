@@ -1,18 +1,18 @@
 import assert from "node:assert/strict";
 import { randomBytes, randomUUID } from "node:crypto";
-import { subscriptionEnvSchema } from "../lib/server/subscription-env";
+import { subscriptionEnvSchema } from "../lib/server/subscriptions/env";
 import {
   createSubscriberLink,
   verifySubscriberLink,
   createSubscriptionProof,
   verifySubscriptionProof,
-} from "../lib/server/subscriber-links";
+} from "../lib/server/subscriptions/links";
 import {
   authorizeSubscriptionForm,
   readSubscriptionForm,
   subscriptionResponse,
-} from "../lib/server/subscription-http";
-import { signupSchema } from "../lib/server/subscriptions";
+} from "../lib/server/subscriptions/http";
+import { signupSchema } from "../lib/server/subscriptions/storage";
 
 async function main() {
   const env = subscriptionEnvSchema.parse({

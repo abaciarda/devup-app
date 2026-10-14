@@ -1,15 +1,15 @@
 import { z } from "zod";
-import { getDb } from "@/lib/server/db";
-import { webhookSecret } from "@/lib/server/delivery-env";
+import { getDb } from "@/lib/server/database/client";
+import { webhookSecret } from "@/lib/server/delivery/env";
 import {
   applyEmailEvent,
   emailEventSchema,
-} from "@/lib/server/delivery-webhooks";
+} from "@/lib/server/delivery/webhooks";
 import {
   readWebhookBody,
   verifyEmailWebhook,
-} from "@/lib/server/webhook-verification";
-import { subscriptionResponse } from "@/lib/server/subscription-http";
+} from "@/lib/server/delivery/webhook-verification";
+import { subscriptionResponse } from "@/lib/server/subscriptions/http";
 
 export async function POST(request: Request) {
   let secret: string;

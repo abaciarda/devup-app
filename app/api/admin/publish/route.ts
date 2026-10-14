@@ -1,13 +1,13 @@
-import { privateResponse } from "@/lib/server/admin-http";
+import { privateResponse } from "@/lib/server/admin/http";
 import {
   authorizeAdminMutation,
   mutationRedirect,
   readMutationForm,
-} from "@/lib/server/admin-mutations";
+} from "@/lib/server/admin/mutations";
 import {
   PublicationError,
   publishReviewedIssue,
-} from "@/lib/server/publication";
+} from "@/lib/server/issues/publication";
 import { revalidatePath, revalidateTag } from "next/cache";
 import type { NextRequest } from "next/server";
 import { z } from "zod";

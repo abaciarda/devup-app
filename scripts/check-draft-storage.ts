@@ -1,19 +1,19 @@
 import "dotenv/config";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { getDb } from "../lib/server/db";
-import { validateModelDraft } from "../lib/server/draft-content";
+import { getDb } from "../lib/server/database/client";
+import { validateModelDraft } from "../lib/server/issues/draft-content";
 import {
   loadDraftCandidates,
   recordGenerationFailure,
   saveReadyDraft,
-} from "../lib/server/draft-storage";
-import { GenerationFailure, type GenerationRun } from "../lib/server/gemini";
+} from "../lib/server/issues/draft-storage";
+import { GenerationFailure, type GenerationRun } from "../lib/server/issues/gemini";
 import {
   acquirePipelineLease,
   releasePipelineLease,
   renewPipelineLease,
-} from "../lib/server/pipeline-lease";
+} from "../lib/server/operations/lease";
 import { draftFixture } from "./draft-fixture";
 
 class RollbackCheck extends Error {}

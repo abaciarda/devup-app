@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
-import { inPreparationWindow } from "../lib/server/pipeline";
-import { operationsEnvSchema } from "../lib/server/operations-env";
-import { authorizeScheduledRequest } from "../lib/server/operations-http";
-import { subscriptionEnv } from "../lib/server/subscription-env";
-import { deliveryEnv } from "../lib/server/delivery-env";
+import { inPreparationWindow } from "../lib/server/operations/pipeline";
+import { operationsEnvSchema } from "../lib/server/operations/env";
+import { authorizeScheduledRequest } from "../lib/server/operations/http";
+import { subscriptionEnv } from "../lib/server/subscriptions/env";
+import { deliveryEnv } from "../lib/server/delivery/env";
 import { runScheduled } from "./run-scheduled.mjs";
 
 async function main() {

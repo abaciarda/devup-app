@@ -1,4 +1,4 @@
-import { hasAdminSession } from "@/lib/server/admin-auth";
+import { hasAdminSession } from "@/lib/server/admin/auth";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 

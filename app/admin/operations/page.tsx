@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { requireAdmin } from "@/lib/server/admin-auth";
-import { getDb } from "@/lib/server/db";
-import { cleanupInTransaction, retentionDays } from "@/lib/server/cleanup";
+import { requireAdmin } from "@/lib/server/admin/auth";
+import { getDb } from "@/lib/server/database/client";
+import { cleanupInTransaction, retentionDays } from "@/lib/server/operations/cleanup";
 
 export const instant = false;
 async function CleanupWorkspace({

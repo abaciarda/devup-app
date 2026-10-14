@@ -1,17 +1,17 @@
 import "dotenv/config";
 import assert from "node:assert/strict";
 import { randomBytes, randomUUID } from "node:crypto";
-import { getDb } from "../lib/server/db";
+import { getDb } from "../lib/server/database/client";
 import { emailFixture } from "./email-fixture";
-import { saveDeliverySnapshot } from "../lib/server/delivery-snapshot";
+import { saveDeliverySnapshot } from "../lib/server/delivery/snapshot";
 import {
   claimDeliveryInTransaction,
   recordDeliveryOutcome,
   readDelivery,
   finishIssueDelivery,
-} from "../lib/server/delivery-storage";
-import { applyEmailEvent } from "../lib/server/delivery-webhooks";
-import { unsubscribeInTransaction } from "../lib/server/subscriptions";
+} from "../lib/server/delivery/storage";
+import { applyEmailEvent } from "../lib/server/delivery/webhooks";
+import { unsubscribeInTransaction } from "../lib/server/subscriptions/storage";
 import type { FrozenEmail } from "../lib/email/contracts";
 
 class RollbackCheck extends Error {}

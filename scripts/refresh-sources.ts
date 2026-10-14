@@ -1,6 +1,6 @@
 import "dotenv/config";
-import { getDb } from "../lib/server/db";
-import { refreshSources } from "../lib/server/refresh-sources";
+import { getDb } from "../lib/server/database/client";
+import { refreshSources } from "../lib/server/sources/refresh";
 
 refreshSources()
   .then((result) => {

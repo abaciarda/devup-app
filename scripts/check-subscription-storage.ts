@@ -1,19 +1,19 @@
 import "dotenv/config";
 import assert from "node:assert/strict";
 import { randomBytes, randomUUID } from "node:crypto";
-import { getDb } from "../lib/server/db";
-import { subscriptionEnvSchema } from "../lib/server/subscription-env";
+import { getDb } from "../lib/server/database/client";
+import { subscriptionEnvSchema } from "../lib/server/subscriptions/env";
 import {
   createSubscriberLink,
   verifySubscriberLink,
-} from "../lib/server/subscriber-links";
+} from "../lib/server/subscriptions/links";
 import {
   subscribeInTransaction,
   confirmInTransaction,
   unsubscribeInTransaction,
   preferencesInTransaction,
   type ConfirmationWork,
-} from "../lib/server/subscriptions";
+} from "../lib/server/subscriptions/storage";
 import { emailFixture } from "./email-fixture";
 
 class RollbackCheck extends Error {}

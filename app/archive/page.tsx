@@ -4,7 +4,7 @@ import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import ArchiveList from "@/components/archive/archive-list";
 import { parseArchiveCursor } from "@/lib/public-issues";
-import { loadArchivePage } from "@/lib/server/published-issues";
+import { loadArchivePage } from "@/lib/server/issues/published";
 
 export const metadata: Metadata = {
   title: "Published editions",

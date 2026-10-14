@@ -1,11 +1,11 @@
-import { privateResponse } from "@/lib/server/admin-http";
+import { privateResponse } from "@/lib/server/admin/http";
 import {
   authorizeAdminMutation,
   mutationRedirect,
   readMutationForm,
-} from "@/lib/server/admin-mutations";
-import { setSourceEnabled } from "@/lib/server/publication";
-import { sourceKeySchema } from "@/lib/server/validation";
+} from "@/lib/server/admin/mutations";
+import { setSourceEnabled } from "@/lib/server/issues/publication";
+import { sourceKeySchema } from "@/lib/server/shared/validation";
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 

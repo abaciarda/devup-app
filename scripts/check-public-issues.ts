@@ -6,7 +6,7 @@ import {
   storyForCard,
   summarizeIssue,
 } from "../lib/public-issues";
-import { validateModelDraft } from "../lib/server/draft-content";
+import { validateModelDraft } from "../lib/server/issues/draft-content";
 import { draftFixture } from "./draft-fixture";
 
 const fixture = draftFixture();

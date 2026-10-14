@@ -10,11 +10,11 @@ import {
   hashToken,
   isSameOrigin,
   randomToken,
-} from "../lib/server/security";
+} from "../lib/server/shared/security";
 import {
   parseSourceFetchUrl,
   rawItemInputSchema,
-} from "../lib/server/validation";
+} from "../lib/server/shared/validation";
 
 assert.equal(editionDateKey(new Date("2026-10-11T20:59:59Z")), "2026-10-11");
 assert.equal(editionDateKey(new Date("2026-10-11T21:00:00Z")), "2026-10-12");

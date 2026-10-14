@@ -2,14 +2,14 @@ import "dotenv/config";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { randomBytes, randomUUID } from "node:crypto";
-import { getDb } from "../lib/server/db";
-import { subscriptionEnvSchema } from "../lib/server/subscription-env";
+import { getDb } from "../lib/server/database/client";
+import { subscriptionEnvSchema } from "../lib/server/subscriptions/env";
 import {
   createSubscriberLink,
   createSubscriptionProof,
   subscriptionRateKey,
-} from "../lib/server/subscriber-links";
-import { hashToken } from "../lib/server/security";
+} from "../lib/server/subscriptions/links";
+import { hashToken } from "../lib/server/shared/security";
 
 async function main() {
   const db = getDb();

@@ -1,7 +1,7 @@
 import "dotenv/config";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { getDb } from "../lib/server/db";
+import { getDb } from "../lib/server/database/client";
 import {
   acquirePipelineLease,
   commitUnderPipelineLease,
@@ -9,8 +9,8 @@ import {
   releasePipelineLease,
   renewPipelineLease,
   type PipelineLease,
-} from "../lib/server/pipeline-lease";
-import { consumeRateLimit } from "../lib/server/rate-limit";
+} from "../lib/server/operations/lease";
+import { consumeRateLimit } from "../lib/server/shared/rate-limit";
 
 const db = getDb();
 const key = `verify:${randomUUID()}`;

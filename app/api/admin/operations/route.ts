@@ -4,12 +4,12 @@ import {
   authorizeAdminMutation,
   readMutationForm,
   mutationRedirect,
-} from "@/lib/server/admin-mutations";
-import { privateResponse } from "@/lib/server/admin-http";
-import { runCleanup } from "@/lib/server/cleanup";
-import { runPipeline } from "@/lib/server/pipeline";
+} from "@/lib/server/admin/mutations";
+import { privateResponse } from "@/lib/server/admin/http";
+import { runCleanup } from "@/lib/server/operations/cleanup";
+import { runPipeline } from "@/lib/server/operations/pipeline";
 import { NextResponse } from "next/server";
-import { adminEnv } from "@/lib/server/admin-env";
+import { adminEnv } from "@/lib/server/admin/env";
 
 export const maxDuration = 300;
 export async function POST(request: NextRequest) {

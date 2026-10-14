@@ -5,7 +5,7 @@ import {
   rawItemInputSchema,
   type RawItemInput,
   type SourceKey,
-} from "../validation";
+} from "../shared/validation";
 import { fetchSourceJson, sourceErrorCode, SourceFetchError } from "./http";
 import { isNewsPost, normalizeStoryUrl, plainSourceText } from "./text";
 

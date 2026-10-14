@@ -1,5 +1,5 @@
-import { mutationNoticeText } from "@/lib/server/admin-mutations";
-import { readAdminIssue } from "@/lib/server/admin-preview";
+import { mutationNoticeText } from "@/lib/server/admin/mutations";
+import { readAdminIssue } from "@/lib/server/admin/preview";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";

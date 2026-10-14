@@ -1,13 +1,13 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
-import { getDb } from "@/lib/server/db";
-import { subscriptionEnv } from "@/lib/server/subscription-env";
+import { getDb } from "@/lib/server/database/client";
+import { subscriptionEnv } from "@/lib/server/subscriptions/env";
 import {
   createSubscriptionProof,
   verifySubscriberLink,
   type SubscriptionAction,
-} from "@/lib/server/subscriber-links";
-import { hashToken } from "@/lib/server/security";
+} from "@/lib/server/subscriptions/links";
+import { hashToken } from "@/lib/server/shared/security";
 import SubscriptionActionView from "./subscription-action";
 
 type Props = {
