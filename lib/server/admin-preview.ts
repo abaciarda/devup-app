@@ -53,6 +53,8 @@ export async function readAdminIssue(input: string) {
       generationUsage: true,
       publishedAt: true,
       updatedAt: true,
+      deliveryStartedAt: true,
+      deliveryFinishedAt: true,
     },
   });
   if (!issue) return null;
@@ -65,6 +67,8 @@ export async function readAdminIssue(input: string) {
     generationError: issue.generationError,
     generationModel: issue.generationModel,
     publishedAt: issue.publishedAt,
+    deliveryStartedAt: issue.deliveryStartedAt,
+    deliveryFinishedAt: issue.deliveryFinishedAt,
     content: content.success ? content.data : null,
     invalidContent: issue.content !== null && !content.success,
     evidence: metadata.success

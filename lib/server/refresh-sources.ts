@@ -7,6 +7,7 @@ import {
   acquirePipelineLease,
   commitUnderPipelineLease,
   releasePipelineLease,
+  type PipelineLease,
 } from "./pipeline-lease";
 import {
   fetchSource,
@@ -121,9 +122,11 @@ export type RefreshResult =
     };
 
 export async function refreshSources(
-  options: Pick<SourceContext, "fetcher" | "pause"> = {},
+  options: Pick<SourceContext, "fetcher" | "pause"> & {
+    lease?: PipelineLease;
+  } = {},
 ): Promise<RefreshResult> {
-  const lease = await acquirePipelineLease();
+  const lease = options.lease ?? (await acquirePipelineLease());
   if (!lease) return { status: "busy" };
 
   try {
@@ -162,7 +165,8 @@ export async function refreshSources(
         }
         try {
           const batch = await fetchSource(key, config.data.limit, {
-            ...options,
+            fetcher: options.fetcher,
+            pause: options.pause,
             now,
             signal: AbortSignal.any([deadline, AbortSignal.timeout(45_000)]),
           });
@@ -216,6 +220,6 @@ export async function refreshSources(
       enoughCandidates: pool.length >= 5,
     };
   } finally {
-    await releasePipelineLease(lease);
+    if (!options.lease) await releasePipelineLease(lease);
   }
 }

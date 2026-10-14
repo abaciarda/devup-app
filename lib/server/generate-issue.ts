@@ -12,6 +12,7 @@ import {
   commitUnderPipelineLease,
   PipelineLeaseLostError,
   releasePipelineLease,
+  type PipelineLease,
 } from "./pipeline-lease";
 
 export type GenerateIssueResult =
@@ -29,13 +30,14 @@ export async function generateIssue(
   options: {
     now?: () => Date;
     generator?: typeof generateBilingualDraft;
+    lease?: PipelineLease;
   } = {},
 ): Promise<GenerateIssueResult> {
   const now = options.now ?? (() => new Date());
   const start = now();
   const key = editionDateKey(start);
   const date = editionDateFromKey(key);
-  const lease = await acquirePipelineLease();
+  const lease = options.lease ?? (await acquirePipelineLease());
   if (!lease) return { status: "busy" };
   try {
     const issue = await commitUnderPipelineLease(lease, (tx) =>
@@ -105,6 +107,6 @@ export async function generateIssue(
       };
     }
   } finally {
-    await releasePipelineLease(lease);
+    if (!options.lease) await releasePipelineLease(lease);
   }
 }

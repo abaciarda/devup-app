@@ -35,7 +35,19 @@
     "db:check-public": "node --conditions=react-server --import tsx scripts/check-public-storage.ts",
     "email:check": "node --import tsx scripts/check-email.ts",
     "email:preview": "node --import tsx scripts/preview-email.ts",
-    "db:check-email": "node --conditions=react-server --import tsx scripts/check-email-storage.ts"
+    "db:check-email": "node --conditions=react-server --import tsx scripts/check-email-storage.ts",
+    "subscription:check": "node --conditions=react-server --import tsx scripts/check-subscriptions.ts",
+    "db:check-subscriptions": "node --conditions=react-server --import tsx scripts/check-subscription-storage.ts",
+    "subscription:http:check": "node --conditions=react-server --import tsx scripts/check-subscription-http.ts",
+    "delivery:check": "node --conditions=react-server --import tsx scripts/check-delivery.ts",
+    "db:check-delivery": "node --conditions=react-server --import tsx scripts/check-delivery-storage.ts",
+    "delivery:http:check": "node --conditions=react-server --import tsx scripts/check-delivery-http.ts",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:migrate:status": "prisma migrate status",
+    "launch:check": "node --conditions=react-server --import tsx scripts/check-launch.ts",
+    "operations:check": "node --conditions=react-server --import tsx scripts/check-operations.ts",
+    "db:check-operations": "node --conditions=react-server --import tsx scripts/check-operations-storage.ts",
+    "operations:http:check": "node --conditions=react-server --import tsx scripts/check-operations-http.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",
@@ -47,6 +59,7 @@
     "react-dom": "19.3.0",
     "react-email": "6.11.1",
     "server-only": "0.0.1",
+    "svix": "2.8.0",
     "zod": "4.6.5"
   },
   "devDependencies": {

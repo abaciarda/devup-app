@@ -1,0 +1,27 @@
+name: Newsletter cleanup
+on:
+  schedule:
+    - cron: "43 0 * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: newsletter-cleanup
+  cancel-in-progress: false
+jobs:
+  cleanup:
+    if: vars.AUTOMATION_ENABLED == 'true' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SITE_URL: ${{ vars.SITE_URL }}
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: "24"
+      - name: Apply approved retention policy
+        run: node scripts/run-scheduled.mjs cleanup

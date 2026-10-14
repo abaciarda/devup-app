@@ -67,58 +67,60 @@ model RawItem {
 }
 
 model Issue {
-  id                 Int              @id @default(autoincrement())
-  editionDate        DateTime         @unique @db.Date
-  generationStatus   GenerationStatus @default(draft)
-  content            Json?
-  generationModel    String?
-  generationUsage    Json?
-  generationError    String?
-  publishedAt        DateTime?
-  deliveryStartedAt  DateTime?
-  deliveryFinishedAt DateTime?
-  rawItems           RawItem[]
-  sendLogs           SendLog[]
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
+  id                          Int              @id @default(autoincrement())
+  editionDate                 DateTime         @unique @db.Date
+  generationStatus            GenerationStatus @default(draft)
+  content                     Json?
+  generationModel             String?
+  generationUsage             Json?
+  generationError             String?
+  publishedAt                 DateTime?
+  deliveryStartedAt           DateTime?
+  deliveryFinishedAt          DateTime?
+  scheduledGenerationAttempts Int              @default(0)
+  rawItems                    RawItem[]
+  sendLogs                    SendLog[]
+  createdAt                   DateTime         @default(now())
+  updatedAt                   DateTime         @updatedAt
 
   @@index([publishedAt, editionDate])
 }
 
 model Subscriber {
-  id                         String           @id @default(uuid())
-  email                      String           @unique @db.VarChar(254)
+  id                         String             @id @default(uuid())
+  email                      String             @unique @db.VarChar(254)
   language                   EmailLanguage
-  status                     SubscriberStatus @default(pending)
-  subscriptionVersion        Int              @default(1)
-  consentAt                  DateTime         @db.Timestamptz(3)
-  consentVersion             String           @db.VarChar(100)
-  confirmedAt                DateTime?        @db.Timestamptz(3)
-  unsubscribedAt             DateTime?        @db.Timestamptz(3)
-  suppressedAt               DateTime?        @db.Timestamptz(3)
-  suppressionReason          String?          @db.VarChar(100)
-  confirmationTokenHash      String?          @unique @db.VarChar(64)
-  confirmationIssuedAt       DateTime?        @db.Timestamptz(3)
-  confirmationExpiresAt      DateTime?        @db.Timestamptz(3)
-  confirmationSendId         String?          @unique
+  status                     SubscriberStatus   @default(pending)
+  subscriptionVersion        Int                @default(1)
+  consentAt                  DateTime           @db.Timestamptz(3)
+  consentVersion             String             @db.VarChar(100)
+  confirmedAt                DateTime?          @db.Timestamptz(3)
+  unsubscribedAt             DateTime?          @db.Timestamptz(3)
+  suppressedAt               DateTime?          @db.Timestamptz(3)
+  suppressionReason          String?            @db.VarChar(100)
+  confirmationTokenHash      String?            @unique @db.VarChar(64)
+  confirmationIssuedAt       DateTime?          @db.Timestamptz(3)
+  confirmationExpiresAt      DateTime?          @db.Timestamptz(3)
+  confirmationSendId         String?            @unique
   confirmationPayload        Json?
-  confirmationIdempotencyKey String?          @unique @db.VarChar(256)
+  confirmationIdempotencyKey String?            @unique @db.VarChar(256)
   confirmationStatus         SendStatus?
-  confirmationAttempts       Int              @default(0)
-  confirmationRetryable      Boolean          @default(false)
-  confirmationNeedsReview    Boolean          @default(false)
-  confirmationFirstAttemptAt DateTime?        @db.Timestamptz(3)
-  confirmationLastAttemptAt  DateTime?        @db.Timestamptz(3)
-  confirmationNextAttemptAt  DateTime?        @db.Timestamptz(3)
-  confirmationProviderId     String?          @unique
-  confirmationAcceptedAt     DateTime?        @db.Timestamptz(3)
-  confirmationDeliveredAt    DateTime?        @db.Timestamptz(3)
-  confirmationBouncedAt      DateTime?        @db.Timestamptz(3)
-  confirmationComplainedAt   DateTime?        @db.Timestamptz(3)
+  confirmationAttempts       Int                @default(0)
+  confirmationRetryable      Boolean            @default(false)
+  confirmationNeedsReview    Boolean            @default(false)
+  confirmationFirstAttemptAt DateTime?          @db.Timestamptz(3)
+  confirmationLastAttemptAt  DateTime?          @db.Timestamptz(3)
+  confirmationNextAttemptAt  DateTime?          @db.Timestamptz(3)
+  confirmationProviderId     String?            @unique
+  confirmationAcceptedAt     DateTime?          @db.Timestamptz(3)
+  confirmationDeliveredAt    DateTime?          @db.Timestamptz(3)
+  confirmationBouncedAt      DateTime?          @db.Timestamptz(3)
+  confirmationComplainedAt   DateTime?          @db.Timestamptz(3)
   confirmationError          String?
   sendLogs                   SendLog[]
-  createdAt                  DateTime         @default(now())
-  updatedAt                  DateTime         @updatedAt
+  confirmationSends          ConfirmationSend[]
+  createdAt                  DateTime           @default(now())
+  updatedAt                  DateTime           @updatedAt
 
   @@index([status, id])
   @@index([status, confirmationExpiresAt])
@@ -157,6 +159,20 @@ model SendLog {
   @@index([subscriberId])
 }
 
+model ConfirmationSend {
+  id             String     @id
+  subscriberId   String
+  subscriber     Subscriber @relation(fields: [subscriberId], references: [id], onDelete: Restrict)
+  firstAttemptAt DateTime   @db.Timestamptz(3)
+  providerId     String?    @unique
+  acceptedAt     DateTime?  @db.Timestamptz(3)
+  deliveredAt    DateTime?  @db.Timestamptz(3)
+  bouncedAt      DateTime?  @db.Timestamptz(3)
+  complainedAt   DateTime?  @db.Timestamptz(3)
+
+  @@index([subscriberId])
+}
+
 model RateLimit {
   key             String   @id
   hits            Int
@@ -164,6 +180,13 @@ model RateLimit {
   expiresAt       DateTime @db.Timestamptz(3)
 
   @@index([expiresAt])
+}
+
+model CleanupRun {
+  date       DateTime  @id @db.Date
+  startedAt  DateTime  @db.Timestamptz(3)
+  finishedAt DateTime? @db.Timestamptz(3)
+  counts     Json?
 }
 
 model PipelineLease {

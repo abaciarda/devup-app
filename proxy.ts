@@ -4,9 +4,12 @@ import {
   verifyAdminSession,
 } from "@/lib/server/admin-session";
 import { NextResponse, type NextRequest } from "next/server";
+import { subscriptionResponse } from "@/lib/server/subscription-http";
 
 export function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+  if (!pathname.startsWith("/admin") && !pathname.startsWith("/api/admin"))
+    return subscriptionResponse(NextResponse.next());
   const publicEntry =
     pathname === "/admin/login" ||
     pathname === "/api/admin/login" ||
@@ -30,4 +33,17 @@ export function proxy(request: NextRequest) {
   }
 }
 
-export const config = { matcher: ["/admin/:path*", "/api/admin/:path*"] };
+export const config = {
+  matcher: [
+    "/admin/:path*",
+    "/api/admin/:path*",
+    "/confirm",
+    "/unsubscribe",
+    "/preferences",
+    "/subscription/:path*",
+    "/api/subscribe",
+    "/api/confirm",
+    "/api/unsubscribe",
+    "/api/preferences",
+  ],
+};

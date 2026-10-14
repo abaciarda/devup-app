@@ -13,12 +13,42 @@ export const mutationNoticeSchema = z.enum([
   "already_published",
   "cache_refresh_pending",
   "busy",
+  "delivery_disabled",
+  "delivery_progress",
+  "delivery_reconciled",
+  "delivery_failed",
+  "delivery_complete",
+  "delivery_retry_scheduled",
+  "delivery_needs_review",
+  "delivery_daily_limit",
+  "delivery_provider_backoff",
+  "operations_status",
   ...publicationErrorSchema.options,
   "operation_failed",
 ]);
 export type MutationNotice = z.infer<typeof mutationNoticeSchema>;
 
 const notices: Record<MutationNotice, string> = {
+  operations_status:
+    "Operational request finished or was skipped. Check the launch settings and edition state; scheduled preparation never publishes automatically.",
+  delivery_provider_backoff:
+    "Resend requested a pause. All confirmation and issue submissions are paused until the shared provider cooldown expires.",
+  delivery_complete:
+    "Delivery processing is complete. Review accepted sends, permanent failures and provider delivery events separately.",
+  delivery_retry_scheduled:
+    "Eligible retries are scheduled in PostgreSQL. Run again after their next-attempt time; recurring invocations arrive in Task 12.",
+  delivery_needs_review:
+    "Uncertain or invalid delivery work needs operator review. Check its provider outcome before any further action.",
+  delivery_daily_limit:
+    "The configured daily email-attempt budget was reached. Processing can resume on the next UTC day; check your provider allowance too.",
+  delivery_disabled:
+    "Email sending is disabled. Configure the provider and sender settings before enabling it.",
+  delivery_progress:
+    "Delivery run finished. Check delivery counts and scheduled retries in the workspace; run again to continue remaining eligible work.",
+  delivery_reconciled:
+    "The provider email matched saved work. Its verified outcome was recorded.",
+  delivery_failed:
+    "Delivery operation failed. Review configuration, snapshot capacity and unresolved work before retrying.",
   source_saved: "Source setting saved.",
   source_not_found: "Source is missing. Check the source seed.",
   published:

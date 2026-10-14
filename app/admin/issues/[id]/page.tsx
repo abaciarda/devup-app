@@ -154,6 +154,23 @@ async function IssuePreview({ params, searchParams }: PreviewProps) {
       {issue.publishedAt && issue.reviewVersion && (
         <section className="space-y-3 border-t border-line pt-6">
           <p>
+            {issue.deliveryFinishedAt
+              ? `Delivery processing finished ${issue.deliveryFinishedAt.toISOString()}; check failures and provider events in the workspace.`
+              : issue.deliveryStartedAt
+                ? `Recipient snapshot saved ${issue.deliveryStartedAt.toISOString()}. Delivery can resume.`
+                : "No email recipient snapshot yet."}
+          </p>
+          <form action="/api/admin/delivery" method="post">
+            <input type="hidden" name="mode" value="issue" />
+            <input type="hidden" name="issueId" value={issue.id} />
+            <button
+              type="submit"
+              className="rounded-lg border border-line px-4 py-2"
+            >
+              Start or resume email delivery
+            </button>
+          </form>
+          <p>
             Published at {issue.publishedAt.toISOString()}. This snapshot is
             frozen; email delivery is separate.
           </p>

@@ -2,6 +2,8 @@ import { mutationNoticeText } from "@/lib/server/admin-mutations";
 import { listAdminIssues, listAdminSources } from "@/lib/server/admin-preview";
 import Link from "next/link";
 import { Suspense } from "react";
+import DeliveryPanel from "@/components/admin/delivery-panel";
+import OperationsPanel from "@/components/admin/operations-panel";
 
 export const instant = false;
 type Search = Promise<{ notice?: string | string[] }>;
@@ -30,6 +32,8 @@ async function AdminWorkspace({ searchParams }: { searchParams: Search }) {
           {notice}
         </p>
       )}
+      <DeliveryPanel />
+      <OperationsPanel />
       <section className="space-y-4">
         <h2 className="text-xl font-semibold">News sources</h2>
         <p className="text-sm text-muted">

@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useLanguage } from "@/components/i18n/language";
 import { messages } from "@/components/i18n/messages";
+import Link from "next/link";
 
 export default function Footer() {
   const language = useLanguage();
@@ -76,9 +76,6 @@ export default function Footer() {
               {copy.footerMorning}
             </h2>
             <p className="mt-4 text-sm leading-relaxed">{copy.sendTime}</p>
-            <p className="mt-3 text-sm leading-relaxed">
-              {copy.footerLanguages} {copy.footerFree}
-            </p>
           </div>
         </div>
         <div className="mt-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 text-[11px]">
