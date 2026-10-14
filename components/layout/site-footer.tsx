@@ -40,7 +40,7 @@ export default function Footer() {
               <Link href="/#today" className="text-blue">
                 {copy.todayLink}
               </Link>
-              <Link href="/#archive" className="text-blue">
+              <Link href="/archive" className="text-blue">
                 {copy.footerPrevious}
               </Link>
               <Link href="/#subscribe" className="text-blue">
@@ -56,7 +56,7 @@ export default function Footer() {
               {[
                 ["Hacker News", "https://news.ycombinator.com/"],
                 ["Dev.to", "https://dev.to/"],
-                ["Reddit", "https://www.reddit.com/r/programming/"],
+                ["Lobsters", "https://lobste.rs/"],
               ].map(([name, url]) => (
                 <li key={name}>
                   <a

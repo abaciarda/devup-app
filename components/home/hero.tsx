@@ -31,10 +31,7 @@ export default function Hero() {
           {[
             ["Y", "Hacker News"],
             ["DEV", "dev.to"],
-            ["r/", "Reddit"],
-            ["〈/〉", "LeetCode"],
-            ["▥", "Codeforces"],
-            ["H", "HackerRank"],
+            ["L", "Lobsters"],
           ].map(([mark, name]) => (
             <span key={name} className="inline-flex items-center gap-2">
               <b className="text-sm font-semibold text-ink">{mark}</b>

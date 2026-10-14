@@ -1,0 +1,37 @@
+import "server-only";
+import { cacheLife, cacheTag } from "next/cache";
+import type { ArchiveCursor } from "../../types/public-issue";
+import {
+  readArchiveFromDatabase,
+  readHomeFromDatabase,
+  readIssueFromDatabase,
+  readSitemapFromDatabase,
+} from "./published-queries";
+
+export async function loadHomeIssues() {
+  "use cache";
+  cacheTag("issues");
+  cacheLife({ stale: 0, revalidate: 60, expire: 300 });
+  return readHomeFromDatabase();
+}
+
+export async function loadPublishedIssue(date: string) {
+  "use cache";
+  cacheTag("issues");
+  cacheLife({ stale: 0, revalidate: 60, expire: 300 });
+  return readIssueFromDatabase(date);
+}
+
+export async function loadArchivePage(cursor: ArchiveCursor) {
+  "use cache";
+  cacheTag("issues");
+  cacheLife({ stale: 0, revalidate: 60, expire: 300 });
+  return readArchiveFromDatabase(cursor);
+}
+
+export async function loadSitemapIssues() {
+  "use cache";
+  cacheTag("issues");
+  cacheLife({ stale: 0, revalidate: 60, expire: 300 });
+  return readSitemapFromDatabase();
+}

@@ -27,7 +27,7 @@ export default function SiteHeader() {
           className="order-3 flex w-full items-center justify-center gap-6 text-xs text-[#d2d2d7] sm:order-none sm:w-auto sm:justify-start sm:gap-8"
         >
           <Link href="/#today">{copy.todayLink}</Link>
-          <Link href="/#archive" className="focus-visible:rounded-sm">
+          <Link href="/archive" className="focus-visible:rounded-sm">
             {copy.archiveLink}
           </Link>
         </nav>

@@ -1,39 +1,43 @@
 "use client";
 
-import type { Edition } from "@/types/digest";
+import Link from "next/link";
 import { useLanguage } from "@/components/i18n/language";
-import { messages } from "@/components/i18n/messages";
-import { getLocalizedEdition } from "@/lib/edition-locales";
-import StoryCard from "@/components/digest/story-card";
+import { publicCopy, storyForCard } from "@/lib/public-issues";
+import type { PublicIssue } from "@/types/public-issue";
+import StoryCard from "./story-card";
 
-export default function EditionContent({ edition }: { edition: Edition }) {
+export default function EditionContent({ issue }: { issue: PublicIssue }) {
   const language = useLanguage();
-  const copy = messages[language];
-  const localizedEdition = getLocalizedEdition(edition, language);
-
+  const copy = publicCopy[language];
+  const edition = issue.content[language];
   return (
     <main
       id="main"
       className="mx-auto w-full max-w-[1200px] px-6 py-14 sm:px-10 sm:py-20"
     >
       <p className="text-[11px] font-semibold tracking-[1.6px] text-muted uppercase">
-        {copy.issueIntroLabel} · {localizedEdition.date}
+        {copy.issue} #{issue.id} · {issue.date}
       </p>
       <h1 className="mt-4 max-w-[850px] text-[38px] font-semibold leading-tight tracking-[-1.5px] sm:text-[56px]">
-        {localizedEdition.title}
+        {edition.title}
       </h1>
-      <p className="mt-5 max-w-[760px] text-lg text-muted">
-        {localizedEdition.intro}
-      </p>
+      <p className="mt-5 max-w-[760px] text-lg text-muted">{edition.intro}</p>
       <div className="mt-10 grid gap-6 md:grid-cols-3">
-        {localizedEdition.stories.map((story, index) => (
+        {edition.news.map((story, index) => (
           <StoryCard
-            key={`${story.source}-${index}`}
-            story={story}
+            key={story.rawItemId}
+            story={storyForCard(story, language)}
             index={index}
           />
         ))}
       </div>
+      <Link
+        href="/archive"
+        prefetch={false}
+        className="mt-8 inline-block text-blue"
+      >
+        {copy.archive} →
+      </Link>
     </main>
   );
 }

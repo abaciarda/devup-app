@@ -22,7 +22,7 @@ const notices: Record<MutationNotice, string> = {
   source_saved: "Source setting saved.",
   source_not_found: "Source is missing. Check the source seed.",
   published:
-    "Published and frozen. Public database pages are connected in Task 08.",
+    "Published and frozen. The edition is now available on the public website.",
   already_published:
     "This issue was already published. Its snapshot and publication time were preserved.",
   cache_refresh_pending:

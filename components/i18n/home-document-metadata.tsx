@@ -8,6 +8,7 @@ export default function HomeDocumentMetadata() {
   const copy = messages[useLanguage()];
 
   useEffect(() => {
+    document.title = copy.pageTitle;
     const description = document.querySelector<HTMLMetaElement>(
       'meta[name="description"]',
     );

@@ -9,10 +9,10 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { messages } from "@/components/i18n/messages";
+import { useRouter } from "next/navigation";
 
-export type Language = "en" | "tr";
+import type { Language } from "@/types/digest";
+export type { Language } from "@/types/digest";
 
 type LanguageContextValue = {
   language: Language;
@@ -43,7 +43,6 @@ export function LanguageProvider({
   initialLanguage: Language;
   initialNewsletterLanguage: Language | null;
 }) {
-  const pathname = usePathname();
   const router = useRouter();
   const [language, setCurrentLanguage] = useState(initialLanguage);
   const [newsletterLanguage, setCurrentNewsletterLanguage] = useState(
@@ -73,27 +72,7 @@ export function LanguageProvider({
 
   useEffect(() => {
     document.documentElement.lang = language;
-
-    let secondFrame = 0;
-    const firstFrame = window.requestAnimationFrame(() => {
-      secondFrame = window.requestAnimationFrame(() => {
-        if (pathname === "/") {
-          document.title = messages[language].pageTitle;
-          return;
-        }
-
-        const pageHeading = document
-          .querySelector("main h1")
-          ?.textContent?.trim();
-        if (pageHeading) document.title = `${pageHeading} — devup`;
-      });
-    });
-
-    return () => {
-      window.cancelAnimationFrame(firstFrame);
-      window.cancelAnimationFrame(secondFrame);
-    };
-  }, [language, pathname]);
+  }, [language]);
 
   const value = useMemo(
     () => ({

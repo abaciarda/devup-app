@@ -30,7 +30,9 @@
     "issue:generate": "node --conditions=react-server --import tsx scripts/generate-issue.ts",
     "admin:check": "node --conditions=react-server --import tsx scripts/check-admin.ts",
     "publication:check": "node --conditions=react-server --import tsx scripts/check-publication.ts",
-    "db:check-publication": "node --conditions=react-server --import tsx scripts/check-publication-storage.ts"
+    "db:check-publication": "node --conditions=react-server --import tsx scripts/check-publication-storage.ts",
+    "public:check": "node --conditions=react-server --import tsx scripts/check-public-issues.ts",
+    "db:check-public": "node --conditions=react-server --import tsx scripts/check-public-storage.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",

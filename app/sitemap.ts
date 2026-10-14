@@ -1,7 +1,18 @@
-import { siteUrl } from "@/lib/site";
 import type { MetadataRoute } from "next";
+import { connection } from "next/server";
+import { siteUrl } from "@/lib/site";
+import { loadSitemapIssues } from "@/lib/server/published-issues";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  await connection();
   if (!siteUrl) return [];
-  return [{ url: siteUrl.href }];
+  const issues = await loadSitemapIssues();
+  return [
+    { url: siteUrl.href },
+    { url: new URL("/archive", siteUrl).href },
+    ...issues.map((issue) => ({
+      url: new URL(`/digest/${issue.date}`, siteUrl).href,
+      lastModified: issue.publishedAt,
+    })),
+  ];
 }

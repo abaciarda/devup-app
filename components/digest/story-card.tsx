@@ -18,7 +18,7 @@ export default function StoryCard({
 
   return (
     <article className="flex flex-col overflow-hidden rounded-[18px] border border-line">
-      <StoryArt index={index} />
+      <StoryArt index={index} label={story.topic} />
       <div className="flex flex-1 flex-col p-6">
         <div className="flex justify-between gap-3 text-[11px] text-[#59595e]">
           <span>{story.source}</span>
@@ -33,7 +33,7 @@ export default function StoryCard({
         <a
           href={story.url}
           target="_blank"
-          rel="noreferrer"
+          rel="noopener noreferrer"
           className={link + " mt-6"}
         >
           {copy.sourceLink} <span aria-hidden="true">↗</span>
