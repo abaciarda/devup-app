@@ -1,7 +1,10 @@
 import * as React from "react";
 import { Heading, Hr, Link, Section, Text } from "react-email";
 import type { CSSProperties } from "react";
-import type { LocalizedIssueContent } from "../types/issue-content";
+import {
+  splitEditionStories,
+  type LocalizedIssueContent,
+} from "../types/issue-content";
 import type { EmailLanguage } from "../lib/email/settings";
 import EmailLayout, { emailColors } from "./layout";
 
@@ -93,6 +96,7 @@ export default function DigestEmail({
   language,
   edition,
   featuredRawItemIds,
+  mainStoryCount,
   issueNumber,
   draft = false,
   dateLabel,
@@ -104,6 +108,7 @@ export default function DigestEmail({
   language: EmailLanguage;
   edition: LocalizedIssueContent;
   featuredRawItemIds: number[];
+  mainStoryCount?: number;
   issueNumber: number;
   draft?: boolean;
   dateLabel: string;
@@ -113,9 +118,11 @@ export default function DigestEmail({
   replyTo: string;
 }) {
   const labels = copy[language];
-  const featured = new Set(featuredRawItemIds);
-  const main = edition.news.filter((story) => featured.has(story.rawItemId));
-  const briefs = edition.news.filter((story) => !featured.has(story.rawItemId));
+  const { main, briefs } = splitEditionStories(
+    edition.news,
+    featuredRawItemIds,
+    mainStoryCount,
+  );
   return (
     <EmailLayout
       language={language}

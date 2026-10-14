@@ -2,7 +2,12 @@ import "server-only";
 import { z } from "zod";
 import type { Prisma } from "../../../generated/prisma/client";
 import { issueContentSchema } from "../../../types/issue-content";
-import { prepareCandidates, sourceKeys, type Candidate } from "../sources/candidates";
+import {
+  candidateLimit,
+  prepareCandidates,
+  sourceKeys,
+  type Candidate,
+} from "../sources/candidates";
 import { getDb } from "../database/client";
 import {
   evidenceSchema,
@@ -73,7 +78,30 @@ export async function loadDraftCandidates(
     rows.map((row) => ({ ...row, usedIssueId: null })),
     new Set(otherUsed.map((row) => row.normalizedUrl)),
     now,
-  ).slice(0, 12);
+  ).slice(0, candidateLimit);
+}
+
+export async function loadRecentStoryTitles(
+  issueId: number,
+  editionDate: Date,
+  client: Pick<Prisma.TransactionClient, "issue"> = getDb(),
+): Promise<string[]> {
+  const issues = await client.issue.findMany({
+    where: {
+      id: { not: issueId },
+      publishedAt: { not: null },
+      editionDate: { lt: editionDate },
+    },
+    orderBy: { editionDate: "desc" },
+    take: 3,
+    select: { content: true },
+  });
+  return issues.flatMap((issue) => {
+    const parsed = issueContentSchema.safeParse(issue.content);
+    return parsed.success
+      ? parsed.data.en.news.map((story) => story.title)
+      : [];
+  });
 }
 
 export async function requirePrivateIssue(

@@ -8,7 +8,10 @@ import {
   recordGenerationFailure,
   saveReadyDraft,
 } from "../lib/server/issues/draft-storage";
-import { GenerationFailure, type GenerationRun } from "../lib/server/issues/gemini";
+import {
+  GenerationFailure,
+  type GenerationRun,
+} from "../lib/server/issues/gemini";
 import {
   acquirePipelineLease,
   releasePipelineLease,
@@ -36,10 +39,10 @@ async function main() {
             throw new Error("Lease lost");
           const now = new Date("2099-04-01T09:00:00.000Z");
           const source = await tx.source.findUniqueOrThrow({
-            where: { key: "devto" },
+            where: { key: "hackernews" },
           });
           if (!source.enabled)
-            throw new Error("Enable devto before this check");
+            throw new Error("Enable hackernews before this check");
           const issue = await tx.issue.create({
             data: { editionDate: new Date("2099-04-01T00:00:00.000Z") },
           });
@@ -87,11 +90,11 @@ async function main() {
           assert.equal(saved.publishedAt, null);
           assert.equal(
             await tx.rawItem.count({ where: { usedIssueId: issue.id } }),
-            5,
+            fixture.pool.length,
           );
           assert.equal(
             (await loadDraftCandidates(issue.id, now, tx)).length,
-            5,
+            fixture.pool.length,
           );
           assert.equal(
             await recordGenerationFailure(tx, issue.id, "http_429", [], now),
@@ -106,7 +109,7 @@ async function main() {
           assert.equal(preserved.generationError, "http_429");
           assert.equal(
             await tx.rawItem.count({ where: { usedIssueId: issue.id } }),
-            5,
+            fixture.pool.length,
           );
           await saveReadyDraft(tx, issue.id, run, fixture.pool, now);
           assert.equal(
@@ -120,7 +123,7 @@ async function main() {
           });
           assert.equal(
             (await loadDraftCandidates(issue.id, now, tx)).length,
-            4,
+            fixture.pool.length - 1,
           );
           await assert.rejects(
             saveReadyDraft(tx, issue.id, run, fixture.pool, now),

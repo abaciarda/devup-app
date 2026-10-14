@@ -119,3 +119,44 @@ export function newsRejection(
     return "no_concrete_development";
   return null;
 }
+
+const titleStopWords = new Set([
+  "the",
+  "and",
+  "for",
+  "with",
+  "from",
+  "into",
+  "that",
+  "this",
+  "its",
+  "are",
+  "was",
+  "how",
+  "why",
+  "what",
+  "now",
+  "new",
+]);
+
+export function titleWords(title: string): Set<string> {
+  return new Set(
+    title
+      .toLowerCase()
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9.+#]+/g, " ")
+      .split(" ")
+      .map((word) => word.replace(/^\.+|\.+$/g, ""))
+      .filter((word) => word.length > 2 && !titleStopWords.has(word)),
+  );
+}
+
+export function titleSimilarity(first: string, second: string): number {
+  const left = titleWords(first);
+  const right = titleWords(second);
+  if (!left.size || !right.size) return 0;
+  let shared = 0;
+  for (const word of left) if (right.has(word)) shared += 1;
+  return shared / (left.size + right.size - shared);
+}

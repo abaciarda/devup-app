@@ -5,66 +5,36 @@ import { isIP } from "node:net";
 import { parseDocument } from "htmlparser2";
 import { hasUsefulSourceText } from "./text";
 
-const publishers = new Set([
-  "github.com",
-  "www.anthropic.com",
-  "anthropic.com",
-  "openai.com",
-  "machinelearning.apple.com",
-  "www.apple.com",
-  "developer.apple.com",
-  "blog.rust-lang.org",
-  "rust-lang.org",
-  "go.dev",
-  "v8.dev",
-  "react.dev",
-  "nextjs.org",
-  "vercel.com",
-  "blog.cloudflare.com",
-  "www.mozilla.org",
-  "hacks.mozilla.org",
-  "blog.mozilla.org",
-  "developer.chrome.com",
-  "chromium.org",
-  "blog.chromium.org",
-  "blog.google",
-  "research.google",
-  "deepmind.google",
-  "developers.googleblog.com",
-  "ai.google.dev",
-  "www.microsoft.com",
-  "devblogs.microsoft.com",
-  "github.blog",
-  "www.docker.com",
-  "www.postgresql.org",
-  "www.kernel.org",
-  "lwn.net",
-  "huggingface.co",
-  "www.nvidia.com",
-  "developer.nvidia.com",
-  "arstechnica.com",
-  "www.theverge.com",
-  "techcrunch.com",
-  "www.wired.com",
-  "www.theguardian.com",
-  "www.heise.de",
-  "sfstandard.com",
-  "argmin.net",
-  "www.argmin.net",
-  "simonwillison.net",
-  "jvns.ca",
-  "tailscale.com",
-  "www.tailscale.com",
-  "www.troyhunt.com",
-  "krebsonsecurity.com",
-  "blog.character.ai",
-  "eg2.haku.sh",
-  "www.sqlite.org",
-  "sqlite.org",
-  "blog.apnic.net",
-  "www.androidauthority.com",
-  "frankforce.com",
-]);
+const blockedHosts = [
+  "x.com",
+  "twitter.com",
+  "t.co",
+  "bsky.app",
+  "threads.net",
+  "mastodon.social",
+  "facebook.com",
+  "instagram.com",
+  "linkedin.com",
+  "tiktok.com",
+  "reddit.com",
+  "youtube.com",
+  "youtu.be",
+  "vimeo.com",
+  "news.ycombinator.com",
+  "lobste.rs",
+  "wsj.com",
+  "ft.com",
+  "bloomberg.com",
+  "economist.com",
+  "nytimes.com",
+  "washingtonpost.com",
+  "theinformation.com",
+  "archive.org",
+  "archive.ph",
+  "archive.is",
+  "docs.google.com",
+  "drive.google.com",
+];
 const maxBytes = 750_000;
 type ArticleNode = ReturnType<typeof parseDocument>["children"][number];
 export type ArticleTransport = (
@@ -82,6 +52,21 @@ export class ArticleError extends Error {
   }
 }
 
+export function publicArticleHost(hostname: string): boolean {
+  const host = hostname.toLowerCase().replace(/\.$/, "");
+  if (
+    isIP(host.replace(/^\[|\]$/g, "")) !== 0 ||
+    !/^[a-z0-9-]+(?:\.[a-z0-9-]+)+$/.test(host) ||
+    /\.(?:local|localhost|internal|lan|home|arpa|test|invalid|example)$/.test(
+      host,
+    )
+  )
+    return false;
+  return !blockedHosts.some(
+    (blocked) => host === blocked || host.endsWith(`.${blocked}`),
+  );
+}
+
 export function articleUrl(input: string): URL {
   if (input.length > 2048) throw new ArticleError("article_url_rejected");
   const url = new URL(input);
@@ -90,7 +75,7 @@ export function articleUrl(input: string): URL {
     url.username ||
     url.password ||
     url.port ||
-    !publishers.has(url.hostname)
+    !publicArticleHost(url.hostname)
   )
     throw new ArticleError("publisher_not_supported");
   url.hash = "";
@@ -219,35 +204,36 @@ export function extractArticle(html: string): string {
     throw new ArticleError("article_too_large");
   const document = parseDocument(html);
   const stack = [...document.children];
-  const roots: ArticleNode[] = [];
+  const articles: ArticleNode[] = [];
+  const mains: ArticleNode[] = [];
+  const containers: ArticleNode[] = [];
+  const bodies: ArticleNode[] = [];
   let count = 0;
   while (stack.length) {
     const node = stack.pop()!;
     if (++count > 50_000) throw new ArticleError("article_too_complex");
     if (excluded(node)) continue;
-    if (
-      "attribs" in node &&
-      (node.name === "article" ||
+    if ("attribs" in node) {
+      const className = node.attribs.class ?? "";
+      if (
+        node.name === "article" ||
         node.attribs.itemprop === "articleBody" ||
-        /(?:^|\s)markdown-body(?:\s|$)/.test(node.attribs.class ?? ""))
-    )
-      roots.push(node);
+        /(?:^|\s)markdown-body(?:\s|$)/.test(className)
+      )
+        articles.push(node);
+      else if (node.name === "main" || node.attribs.role === "main")
+        mains.push(node);
+      else if (
+        /(?:^|\s)(?:post|entry|article|blog|story)[-_]?(?:content|body|text)?(?:\s|$)|(?:^|\s)(?:content|prose|e-content|post|entry)(?:\s|$)/i.test(
+          className,
+        )
+      )
+        containers.push(node);
+      else if (node.name === "body") bodies.push(node);
+    }
     stack.push(...children(node).slice().reverse());
   }
-  if (!roots.length) {
-    const findMain = (nodes: ArticleNode[]): ArticleNode | undefined => {
-      const pending = [...nodes];
-      while (pending.length) {
-        const node = pending.pop()!;
-        if (excluded(node)) continue;
-        if ("name" in node && node.name === "main") return node;
-        pending.push(...children(node));
-      }
-    };
-    const main = findMain(document.children);
-    if (main) roots.push(main);
-  }
-  for (const root of roots) {
+  const readable = (root: ArticleNode): string => {
     const pending = [root];
     const parts: string[] = [];
     while (pending.length) {
@@ -260,8 +246,14 @@ export function extractArticle(html: string): string {
         pending.push(...children(node).slice().reverse());
       }
     }
-    const text = parts.join("").replace(/\s+/g, " ").trim().slice(0, 12_000);
-    if (hasUsefulSourceText(text)) return text;
+    return parts.join("").replace(/\s+/g, " ").trim();
+  };
+  for (const tier of [articles, mains, containers, bodies]) {
+    const best = tier
+      .map(readable)
+      .filter(hasUsefulSourceText)
+      .sort((a, b) => b.length - a.length)[0];
+    if (best) return best.slice(0, 12_000);
   }
   throw new ArticleError("article_unreadable");
 }

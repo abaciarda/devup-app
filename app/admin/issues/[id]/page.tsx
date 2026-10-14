@@ -89,6 +89,11 @@ async function IssuePreview({ params, searchParams }: PreviewProps) {
                 >
                   <p className="text-xs text-muted">
                     {story.sourceKey} · {story.category} · #{story.rawItemId}
+                    {content.mainStoryCount !== undefined
+                      ? edition.news.indexOf(story) < content.mainStoryCount
+                        ? " · Main"
+                        : " · Brief"
+                      : ""}
                     {content.featuredRawItemIds.includes(story.rawItemId)
                       ? " · Featured"
                       : ""}

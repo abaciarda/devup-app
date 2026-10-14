@@ -38,9 +38,12 @@ async function main() {
           assert.ok(await renewPipelineLease(owner, 600, tx));
           const now = new Date("2099-06-01T09:00:00.000Z");
           const source = await tx.source.findUniqueOrThrow({
-            where: { key: "devto" },
+            where: { key: "hackernews" },
           });
-          assert.ok(source.enabled, "Enable devto before running this check");
+          assert.ok(
+            source.enabled,
+            "Enable hackernews before running this check",
+          );
           const issue = await tx.issue.create({
             data: { editionDate: new Date("2099-06-01T00:00:00.000Z") },
           });
@@ -114,7 +117,7 @@ async function main() {
           assert.equal(
             (
               await setSourceInTransaction(tx, {
-                sourceKey: "devto",
+                sourceKey: "hackernews",
                 enabled: false,
               })
             ).status,
@@ -125,7 +128,7 @@ async function main() {
             refused("source_disabled"),
           );
           await setSourceInTransaction(tx, {
-            sourceKey: "devto",
+            sourceKey: "hackernews",
             enabled: true,
           });
           await tx.rawItem.update({
@@ -155,7 +158,7 @@ async function main() {
           assert.equal(await nextEditionNumber(tx), before.nextNumber + 1);
           assert.equal(
             await tx.rawItem.count({ where: { usedIssueId: issue.id } }),
-            5,
+            fixture.pool.length,
           );
           assert.equal(
             (
@@ -175,7 +178,7 @@ async function main() {
             now.toISOString(),
           );
           await setSourceInTransaction(tx, {
-            sourceKey: "devto",
+            sourceKey: "hackernews",
             enabled: false,
           });
           assert.deepEqual(
@@ -184,7 +187,7 @@ async function main() {
             saved.content,
           );
           await setSourceInTransaction(tx, {
-            sourceKey: "devto",
+            sourceKey: "hackernews",
             enabled: true,
           });
           throw new RollbackCheck();
@@ -208,7 +211,7 @@ async function main() {
 
 main().catch(() => {
   console.error(
-    "Publication storage check failed. Check database access, devto state, and the reserved fixture date.",
+    "Publication storage check failed. Check database access, hackernews state, and the reserved fixture date.",
   );
   process.exitCode = 1;
 });

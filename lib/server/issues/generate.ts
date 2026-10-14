@@ -2,11 +2,13 @@ import "server-only";
 import { editionDateFromKey, editionDateKey } from "../../edition-date";
 import {
   loadDraftCandidates,
+  loadRecentStoryTitles,
   recordGenerationFailure,
   requirePrivateIssue,
   saveReadyDraft,
 } from "./draft-storage";
 import { generateBilingualDraft, GenerationFailure } from "./gemini";
+import { minimumEditionStories } from "../sources/candidates";
 import {
   acquirePipelineLease,
   commitUnderPipelineLease,
@@ -56,11 +58,13 @@ export async function generateIssue(
     }
     try {
       const pool = await loadDraftCandidates(issue.id, start);
-      if (pool.length < 5)
+      if (pool.length < minimumEditionStories)
         throw new GenerationFailure("insufficient_candidates");
+      const recentTitles = await loadRecentStoryTitles(issue.id, date);
       const run = await (options.generator ?? generateBilingualDraft)(
         pool,
         key,
+        { recentTitles },
       );
       if (!run.draft)
         throw new GenerationFailure(

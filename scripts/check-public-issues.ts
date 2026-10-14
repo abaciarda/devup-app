@@ -35,8 +35,12 @@ assert.deepEqual(
   [5, 3, 1],
 );
 assert.equal(summarizeIssue(issue).titles.tr, draft.content.tr.title);
-assert.equal(storyForCard(issue.content.en.news[0], "en").source, "Dev.to");
-assert.equal(storyForCard(issue.content.tr.news[0], "tr").topic, "Araçlar");
+assert.equal(
+  storyForCard(issue.content.en.news[0], "en").source,
+  "Hacker News",
+);
+assert.equal(storyForCard(issue.content.tr.news[0], "tr").topic, "Yazılım");
+assert.equal(storyForCard(issue.content.tr.news[1], "tr").topic, "Güvenlik");
 assert.throws(() => parsePublicIssue({ ...row, publishedAt: null }));
 assert.throws(() =>
   parsePublicIssue({ ...row, generationError: "private canary" }),

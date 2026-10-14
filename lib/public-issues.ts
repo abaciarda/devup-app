@@ -58,16 +58,20 @@ const sources = {
 const categories: Record<Language, Record<NewsStory["category"], string>> = {
   en: {
     ai: "AI",
+    security: "Security",
     software: "Software",
     tools: "Tools",
     open_source: "Open source",
+    industry: "Industry",
     community: "Community",
   },
   tr: {
     ai: "Yapay zekâ",
+    security: "Güvenlik",
     software: "Yazılım",
     tools: "Araçlar",
     open_source: "Açık kaynak",
+    industry: "Sektör",
     community: "Topluluk",
   },
 };

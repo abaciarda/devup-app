@@ -1,7 +1,7 @@
 import "server-only";
 import { setTimeout as delay } from "node:timers/promises";
 import { z } from "zod";
-import type { Candidate } from "../sources/candidates";
+import { minimumEditionStories, type Candidate } from "../sources/candidates";
 import {
   buildDraftPrompt,
   modelJsonSchema,
@@ -114,9 +114,11 @@ export async function generateBilingualDraft(
     fetcher?: typeof fetch;
     pause?: (milliseconds: number, signal: AbortSignal) => Promise<void>;
     signal?: AbortSignal;
+    recentTitles?: string[];
   } = {},
 ): Promise<GenerationRun> {
-  if (pool.length < 5) throw new GenerationFailure("insufficient_candidates");
+  if (pool.length < minimumEditionStories)
+    throw new GenerationFailure("insufficient_candidates");
   const env = generationEnvSchema.parse(options.env ?? generationEnv());
   const fetcher = options.fetcher ?? fetch;
   const pause =
@@ -125,7 +127,7 @@ export async function generateBilingualDraft(
     AbortSignal.timeout(150_000),
     ...(options.signal ? [options.signal] : []),
   ]);
-  const prompt = buildDraftPrompt(pool, editionKey);
+  const prompt = buildDraftPrompt(pool, editionKey, options.recentTitles);
   const models = [env.GEMINI_MODEL, env.GEMINI_MODEL];
   if (env.GEMINI_FALLBACK_MODEL !== env.GEMINI_MODEL)
     models.push(env.GEMINI_FALLBACK_MODEL);
@@ -150,7 +152,7 @@ export async function generateBilingualDraft(
           method: "POST",
           cache: "no-store",
           redirect: "error",
-          signal: AbortSignal.any([signal, AbortSignal.timeout(40_000)]),
+          signal: AbortSignal.any([signal, AbortSignal.timeout(60_000)]),
           headers: {
             "Content-Type": "application/json",
             "x-goog-api-key": env.GEMINI_API_KEY,

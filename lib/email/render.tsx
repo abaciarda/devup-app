@@ -111,6 +111,7 @@ export async function renderDigestEmail(
       language={input.language}
       edition={edition}
       featuredRawItemIds={input.issue.content.featuredRawItemIds}
+      mainStoryCount={input.issue.content.mainStoryCount}
       issueNumber={input.issue.editionNumber}
       draft={input.issue.draft}
       dateLabel={dateLabel}

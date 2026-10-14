@@ -23,12 +23,15 @@ const json = (value: unknown) =>
     headers: { "Content-Type": "application/json" },
   });
 
-assert.equal(
-  validateModelDraft(fixture.output, fixture.pool)?.content.tr.news.length,
-  5,
-);
-const prompt = buildDraftPrompt(fixture.pool, "2099-04-01");
-assert.ok(!prompt.includes("https://dev.to/"));
+const validated = validateModelDraft(fixture.output, fixture.pool);
+assert.equal(validated?.content.tr.news.length, 10);
+assert.equal(validated?.content.mainStoryCount, 6);
+const prompt = buildDraftPrompt(fixture.pool, "2099-04-01", [
+  "Earlier headline about a database release",
+]);
+assert.ok(!prompt.includes("https://news.example.org/"));
+assert.ok(prompt.includes("Earlier headline about a database release"));
+assert.ok(prompt.includes('"publisher":"news.example.org"'));
 assert.equal(
   validateModelDraft(fixture.output, fixture.pool)?.evidence[0].quote,
   modelEvidencePassages(fixture.pool[0])[0],
@@ -63,8 +66,24 @@ for (const change of [
     draft.featuredRawItemIds = [1, 1, 2];
   },
   (draft: typeof fixture.output) => {
-    draft.tr.news.pop();
-    draft.en.news.pop();
+    draft.tr.news.splice(5);
+    draft.en.news.splice(5);
+  },
+  (draft: typeof fixture.output) => {
+    draft.featuredRawItemIds = [1, 2, 9];
+  },
+  (draft: typeof fixture.output) => {
+    draft.en.news[8].summary = "The release adds a typed interface. ".repeat(
+      13,
+    );
+  },
+  (draft: typeof fixture.output) => {
+    draft.tr.news[2].summary =
+      "The release adds a typed configuration interface and improves the error messages that are shown to developers.";
+  },
+  (draft: typeof fixture.output) => {
+    draft.en.news[0].category = "community" as never;
+    draft.tr.news[0].category = "community" as never;
   },
 ]) {
   const draft = structuredClone(fixture.output);

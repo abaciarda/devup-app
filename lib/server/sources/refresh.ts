@@ -1,7 +1,11 @@
 import "server-only";
 import { z } from "zod";
 import type { Prisma } from "../../../generated/prisma/client";
-import { loadCandidatePool, sourceKeys } from "./candidates";
+import {
+  loadCandidatePool,
+  minimumEditionStories,
+  sourceKeys,
+} from "./candidates";
 import { getDb } from "../database/client";
 import {
   acquirePipelineLease,
@@ -15,8 +19,14 @@ import { normalizeStoryUrl } from "./text";
 import { rawItemInputSchema, type SourceKey } from "../shared/validation";
 
 const configSchema = z.strictObject({
-  limit: z.number().int().min(1).max(25).default(15),
+  limit: z.number().int().min(1).max(40).optional(),
 });
+
+export const defaultSourceLimits: Record<SourceKey, number> = {
+  hackernews: 30,
+  lobsters: 20,
+  devto: 15,
+};
 
 export type PersistResult = {
   inserted: number;
@@ -45,7 +55,7 @@ export async function persistSourceBatch(
 
   const retired = z
     .array(z.string().min(1).max(200))
-    .max(25)
+    .max(40)
     .parse(batch.retiredExternalIds);
   const withdrawn = new Set(retired);
   result.removed = (
@@ -161,13 +171,17 @@ export async function refreshSources(
           return { report, batch: null };
         }
         try {
-          const batch = await fetchSource(key, config.data.limit, {
-            fetcher: options.fetcher,
-            pause: options.pause,
-            articleReader: options.articleReader,
-            now,
-            signal: AbortSignal.any([deadline, AbortSignal.timeout(45_000)]),
-          });
+          const batch = await fetchSource(
+            key,
+            config.data.limit ?? defaultSourceLimits[key],
+            {
+              fetcher: options.fetcher,
+              pause: options.pause,
+              articleReader: options.articleReader,
+              now,
+              signal: AbortSignal.any([deadline, AbortSignal.timeout(75_000)]),
+            },
+          );
           report.listed = batch.listed;
           report.received = batch.items.length;
           report.rejected = batch.rejected;
@@ -216,7 +230,7 @@ export async function refreshSources(
       status: "complete",
       sources: fetched.map((entry) => entry.report),
       candidateCount: pool.length,
-      enoughCandidates: pool.length >= 5,
+      enoughCandidates: pool.length >= minimumEditionStories,
     };
   } finally {
     if (!options.lease) await releasePipelineLease(lease);

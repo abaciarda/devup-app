@@ -7,10 +7,33 @@ import {
   isNewsPost,
   newsRejection,
   normalizeStoryUrl,
+  titleSimilarity,
 } from "./text";
 import { sourceKeySchema, type SourceKey } from "../shared/validation";
 
-export const sourceKeys: SourceKey[] = ["hackernews", "devto", "lobsters"];
+export const sourceKeys: SourceKey[] = ["hackernews", "lobsters", "devto"];
+
+export const minimumEditionStories = 6;
+export const candidateLimit = 22;
+const similarTitleThreshold = 0.6;
+
+const sourceBudgets: Record<SourceKey, number> = {
+  hackernews: 14,
+  lobsters: 6,
+  devto: 2,
+};
+
+const sourceCaps: Record<SourceKey, number> = {
+  hackernews: 22,
+  lobsters: 10,
+  devto: 4,
+};
+
+const sourceWeights: Record<SourceKey, number> = {
+  hackernews: 1,
+  lobsters: 0.85,
+  devto: 0.6,
+};
 
 const rowSchema = z.object({
   id: z.number().int().positive(),
@@ -96,44 +119,59 @@ export function prepareCandidates(
   const pool: Candidate[] = [];
   const seenUrls = new Set<string>();
   const counts = new Map<SourceKey, number>();
-  const maxRows = Math.max(
-    0,
-    ...[...groups.values()].map((group) => group.length),
-  );
-
-  for (let index = 0; index < maxRows && pool.length < 18; index += 1) {
-    for (const key of sourceKeys) {
-      const group = groups.get(key);
-      if (!group) continue;
-      const row = group[index];
-      if (
-        !row ||
-        (counts.get(key) ?? 0) >= 6 ||
-        seenUrls.has(row.normalizedUrl)
+  const consider = (key: SourceKey, index: number, cap: number): void => {
+    const group = groups.get(key);
+    const row = group?.[index];
+    if (
+      !group ||
+      !row ||
+      pool.length >= candidateLimit ||
+      (counts.get(key) ?? 0) >= cap ||
+      seenUrls.has(row.normalizedUrl) ||
+      pool.some(
+        (chosen) =>
+          titleSimilarity(chosen.title, row.title) >= similarTitleThreshold,
       )
-        continue;
-      pool.push({
-        rawItemId: row.id,
-        sourceKey: key,
-        title: row.title,
-        sourceText: row.excerpt,
-        originalUrl: row.originalUrl,
-        normalizedUrl: row.normalizedUrl,
-        publishedAt: row.publishedAt,
-        tags: row.tags,
-        sourceRank: group.length === 1 ? 1 : 1 - index / (group.length - 1),
-        ...(key === "hackernews" && /^\d+$/.test(row.externalId ?? "")
-          ? {
-              discussionUrl: `https://news.ycombinator.com/item?id=${row.externalId}`,
-            }
-          : key === "lobsters" && /^[a-z0-9]{1,20}$/.test(row.externalId ?? "")
-            ? { discussionUrl: `https://lobste.rs/s/${row.externalId}` }
-            : {}),
-      });
-      seenUrls.add(row.normalizedUrl);
-      counts.set(key, (counts.get(key) ?? 0) + 1);
-    }
+    )
+      return;
+    pool.push({
+      rawItemId: row.id,
+      sourceKey: key,
+      title: row.title,
+      sourceText: row.excerpt,
+      originalUrl: row.originalUrl,
+      normalizedUrl: row.normalizedUrl,
+      publishedAt: row.publishedAt,
+      tags: row.tags,
+      sourceRank: group.length === 1 ? 1 : 1 - index / (group.length - 1),
+      ...(key === "hackernews" && /^\d+$/.test(row.externalId ?? "")
+        ? {
+            discussionUrl: `https://news.ycombinator.com/item?id=${row.externalId}`,
+          }
+        : key === "lobsters" && /^[a-z0-9]{1,20}$/.test(row.externalId ?? "")
+          ? { discussionUrl: `https://lobste.rs/s/${row.externalId}` }
+          : {}),
+    });
+    seenUrls.add(row.normalizedUrl);
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  };
+
+  for (const key of sourceKeys) {
+    const group = groups.get(key) ?? [];
+    for (let index = 0; index < group.length; index += 1)
+      consider(key, index, sourceBudgets[key]);
   }
+  for (const key of sourceKeys) {
+    const group = groups.get(key) ?? [];
+    for (let index = 0; index < group.length; index += 1)
+      consider(key, index, sourceCaps[key]);
+  }
+
+  pool.sort(
+    (a, b) =>
+      b.sourceRank * sourceWeights[b.sourceKey] -
+        a.sourceRank * sourceWeights[a.sourceKey] || a.rawItemId - b.rawItemId,
+  );
   const domainCounts = new Map<string, number>();
   const ordered: Candidate[] = [];
   const remaining = [...pool];

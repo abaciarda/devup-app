@@ -91,6 +91,26 @@ function fresh(date: Date, now: Date): boolean {
   return Number.isFinite(age) && age >= -300_000 && age <= 72 * 60 * 60 * 1000;
 }
 
+const articleWorkers = 6;
+
+async function eachConcurrently<T>(
+  values: T[],
+  workers: number,
+  signal: AbortSignal,
+  task: (value: T) => Promise<void>,
+): Promise<void> {
+  let next = 0;
+  await Promise.all(
+    Array.from({ length: Math.min(workers, values.length) }, async () => {
+      while (!signal.aborted) {
+        const index = next++;
+        if (index >= values.length) break;
+        await task(values[index]);
+      }
+    }),
+  );
+}
+
 function exclude(batch: SourceBatch, reason: string): void {
   batch.exclusions ??= {};
   batch.exclusions[reason] = (batch.exclusions[reason] ?? 0) + 1;
@@ -167,7 +187,7 @@ async function hackerNews(
   let stopped = false;
 
   await Promise.all(
-    Array.from({ length: Math.min(4, ids.length) }, async () => {
+    Array.from({ length: Math.min(articleWorkers, ids.length) }, async () => {
       while (!stopped && !context.signal.aborted) {
         const index = next++;
         if (index >= ids.length) break;
@@ -343,41 +363,48 @@ async function lobsters(
   const batch = newBatch();
   batch.listed = rows.length;
 
-  for (const value of rows) {
-    const parsed = lobstersSchema.safeParse(value);
-    if (!parsed.success) {
-      batch.rejected += 1;
-      continue;
-    }
-    const story = parsed.data;
-    if (
-      !fresh(new Date(story.created_at), context.now) ||
-      !isNewsPost(story.title, story.tags)
-    ) {
-      batch.rejected += 1;
-      continue;
-    }
-    const excerpt = story.url
-      ? await articleText(batch, story.url, context)
-      : plainSourceText(story.description_plain || story.description);
-    addItem(
-      batch,
-      {
-        sourceKey: "lobsters",
-        externalId: story.short_id,
-        title: plainSourceText(story.title, 500),
-        originalUrl: story.url || `https://lobste.rs/s/${story.short_id}`,
-        excerpt,
-        publishedAt: new Date(story.created_at),
-        score: story.score,
-        tags: story.tags
-          .map((tag) => tag.trim().slice(0, 60))
-          .filter(Boolean)
-          .slice(0, 20),
-      },
-      context.now,
-    );
-  }
+  await eachConcurrently(
+    rows,
+    articleWorkers,
+    context.signal,
+    async (value) => {
+      const parsed = lobstersSchema.safeParse(value);
+      if (!parsed.success) {
+        batch.rejected += 1;
+        return;
+      }
+      const story = parsed.data;
+      if (
+        !fresh(new Date(story.created_at), context.now) ||
+        !isNewsPost(story.title, story.tags)
+      ) {
+        batch.rejected += 1;
+        return;
+      }
+      const excerpt = story.url
+        ? await articleText(batch, story.url, context)
+        : plainSourceText(story.description_plain || story.description);
+      addItem(
+        batch,
+        {
+          sourceKey: "lobsters",
+          externalId: story.short_id,
+          title: plainSourceText(story.title, 500),
+          originalUrl: story.url || `https://lobste.rs/s/${story.short_id}`,
+          excerpt,
+          publishedAt: new Date(story.created_at),
+          score: story.score,
+          tags: story.tags
+            .map((tag) => tag.trim().slice(0, 60))
+            .filter(Boolean)
+            .slice(0, 20),
+        },
+        context.now,
+      );
+    },
+  );
+  if (context.signal.aborted && batch.errors.length < 5)
+    batch.errors.push("source_timeout");
   return batch;
 }
 
@@ -386,7 +413,7 @@ export async function fetchSource(
   limit: number,
   context: SourceContext,
 ): Promise<SourceBatch> {
-  const count = z.number().int().min(1).max(25).parse(limit);
+  const count = z.number().int().min(1).max(40).parse(limit);
   const adapters = { hackernews: hackerNews, devto, lobsters };
   return adapters[key](count, context);
 }

@@ -22,6 +22,21 @@ assert.ok(extracted.includes("Compiler release"));
 assert.ok(extracted.includes("memory safety"));
 assert.ok(!/canary/.test(extracted));
 assert.throws(() => extractArticle(`<nav>${text}</nav><p>Headline only</p>`));
+assert.ok(
+  extractArticle(
+    `<html><body><header>Site header canary</header><div class="post-content"><p>${text}</p></div><footer>Footer canary</footer></body></html>`,
+  ).includes("memory safety"),
+);
+const bodyOnly = extractArticle(
+  `<html><body><nav>Menu canary</nav><div><p>${text}</p></div></body></html>`,
+);
+assert.ok(bodyOnly.includes("memory safety"));
+assert.ok(!bodyOnly.includes("canary"));
+assert.ok(
+  extractArticle(
+    `<article><p>Related card. ${"Short teaser text for another post. ".repeat(10)}</p></article><article><h1>Compiler release</h1><p>${text}</p></article>`,
+  ).startsWith("Compiler release"),
+);
 assert.throws(() => extractArticle("x".repeat(750_001)));
 assert.ok(
   extractArticle(`<main><p>${text}</p></main>`).includes("memory safety"),
@@ -38,8 +53,20 @@ for (const url of [
   "https://user:pass@github.com/release",
   "https://github.com:8443/release",
   "https://unapproved.example/release",
+  "https://x.com/someone/status/1",
+  "https://www.youtube.com/watch?v=1",
+  "https://old.reddit.com/r/programming",
+  "https://www.wsj.com/tech/story",
+  "https://8.8.8.8/release",
+  "https://printer.local/status",
 ])
   assert.throws(() => articleUrl(url));
+for (const url of [
+  "https://purplesyringa.moe/blog/fma",
+  "https://righto.com/2026/10/harris-chip.html",
+  "https://blog.janestreet.com/aria-indexing/",
+])
+  assert.equal(articleUrl(url).protocol, "https:");
 for (const address of [
   "127.0.0.1",
   "10.0.0.1",
@@ -190,7 +217,12 @@ const rows = [
 ].map((url, index) => ({
   id: index + 1,
   externalId: String(index + 1),
-  title: "Software release adds memory safety",
+  title: [
+    "Compiler release adds memory safety",
+    "Database engine ships asynchronous I/O",
+    "Kernel scheduler gains latency fixes",
+    "Browser vendors agree on extension format",
+  ][index],
   originalUrl: url,
   normalizedUrl: url,
   excerpt: text,
@@ -207,6 +239,51 @@ assert.deepEqual(
   [1, 3, 4, 2],
 );
 assert.equal(pool[0].discussionUrl, "https://news.ycombinator.com/item?id=1");
+const duplicates = prepareCandidates(
+  [
+    { ...rows[0], title: "Rust 1.95 released with new borrow checker" },
+    {
+      ...rows[1],
+      id: 9,
+      title: "Rust 1.95 released with a new borrow checker",
+      source: { key: "lobsters", enabled: true },
+      externalId: "abc123",
+    },
+  ],
+  new Set(),
+  now,
+);
+assert.deepEqual(
+  duplicates.map((row) => row.rawItemId),
+  [1],
+);
+const budgeted = prepareCandidates(
+  Array.from({ length: 12 }, (_, index) => ({
+    ...rows[0],
+    id: 100 + index,
+    externalId: String(100 + index),
+    title: [
+      "Compiler toolchain gains incremental builds",
+      "Postgres extension adds vector search",
+      "Kernel patch fixes scheduler regression",
+      "Browser engine ships container queries",
+      "Package manager speeds dependency resolution",
+      "Cloud runtime introduces durable timers",
+      "Linter release detects async misuse",
+      "Editor plugin supports remote debugging",
+      "Queue library improves retry semantics",
+      "Shell utility rewrites globbing engine",
+      "Container image shrinks base layers",
+      "Logging framework adds structured sinks",
+    ][index],
+    originalUrl: `https://dev.to/a/post-${index}`,
+    normalizedUrl: `https://dev.to/a/post-${index}`,
+    source: { key: "devto", enabled: true },
+  })),
+  new Set(),
+  now,
+);
+assert.equal(budgeted.length, 4);
 console.log(
-  "Article extraction, approved URLs, public DNS, bounded redirects/bodies, exclusions, editorial relevance and publisher diversity checks passed; no network calls.",
+  "Article extraction, public article hosts, public DNS, bounded redirects/bodies, exclusions, editorial relevance and publisher diversity checks passed; no network calls.",
 );
