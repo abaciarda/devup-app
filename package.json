@@ -32,15 +32,20 @@
     "publication:check": "node --conditions=react-server --import tsx scripts/check-publication.ts",
     "db:check-publication": "node --conditions=react-server --import tsx scripts/check-publication-storage.ts",
     "public:check": "node --conditions=react-server --import tsx scripts/check-public-issues.ts",
-    "db:check-public": "node --conditions=react-server --import tsx scripts/check-public-storage.ts"
+    "db:check-public": "node --conditions=react-server --import tsx scripts/check-public-storage.ts",
+    "email:check": "node --import tsx scripts/check-email.ts",
+    "email:preview": "node --import tsx scripts/preview-email.ts",
+    "db:check-email": "node --conditions=react-server --import tsx scripts/check-email-storage.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",
     "@prisma/client": "7.10.0",
+    "@react-email/render": "2.1.0",
     "next": "16.4.0",
     "pg": "8.23.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "react-email": "6.11.1",
     "server-only": "0.0.1",
     "zod": "4.6.5"
   },
