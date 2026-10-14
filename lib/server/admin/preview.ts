@@ -6,6 +6,7 @@ import { loadCandidatePool, sourceKeys } from "../sources/candidates";
 import { getDb } from "../database/client";
 import { evidenceSchema } from "../issues/draft-content";
 import { issueReviewVersion } from "../issues/publication";
+import { nextEditionNumber } from "../issues/edition-number";
 
 const storedEvidenceSchema = z.object({
   savedDraft: z.object({ evidence: evidenceSchema }).nullable(),
@@ -13,11 +14,12 @@ const storedEvidenceSchema = z.object({
 
 export async function listAdminIssues() {
   await requireAdmin();
-  return getDb().issue.findMany({
+  const issues = await getDb().issue.findMany({
     orderBy: { editionDate: "desc" },
     take: 20,
     select: {
       id: true,
+      editionNumber: true,
       editionDate: true,
       generationStatus: true,
       generationError: true,
@@ -25,6 +27,11 @@ export async function listAdminIssues() {
       publishedAt: true,
     },
   });
+  const next = await nextEditionNumber();
+  return issues.map((issue) => ({
+    ...issue,
+    displayNumber: issue.editionNumber ?? next,
+  }));
 }
 
 export async function listAdminSources() {
@@ -58,6 +65,7 @@ export async function readAdminIssue(input: string) {
     where: { id },
     select: {
       id: true,
+      editionNumber: true,
       editionDate: true,
       generationStatus: true,
       generationError: true,
@@ -75,6 +83,7 @@ export async function readAdminIssue(input: string) {
   const metadata = storedEvidenceSchema.safeParse(issue.generationUsage);
   return {
     id: issue.id,
+    displayNumber: issue.editionNumber ?? (await nextEditionNumber()),
     editionDate: issue.editionDate,
     generationStatus: issue.generationStatus,
     generationError: issue.generationError,

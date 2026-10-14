@@ -29,7 +29,8 @@ export default function ArchiveList({ page }: { page: ArchivePage }) {
                 {issue.titles[language]}
               </Link>
               <p className="mt-2 text-sm text-muted">
-                {issue.date} · #{issue.id} · {issue.storyCount} {copy.stories}
+                {issue.date} · #{issue.editionNumber} · {issue.storyCount}{" "}
+                {copy.stories}
               </p>
             </li>
           ))}

@@ -3,6 +3,7 @@ import type { Language } from "./digest";
 
 export type PublicIssue = {
   id: number;
+  editionNumber: number;
   date: string;
   publishedAt: string;
   content: IssueContent;
@@ -10,6 +11,7 @@ export type PublicIssue = {
 
 export type IssueSummary = {
   id: number;
+  editionNumber: number;
   date: string;
   titles: Record<Language, string>;
   storyCount: number;

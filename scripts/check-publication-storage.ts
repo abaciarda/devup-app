@@ -16,6 +16,7 @@ import {
   setSourceInTransaction,
 } from "../lib/server/issues/publication";
 import { draftFixture } from "./draft-fixture";
+import { nextEditionNumber } from "../lib/server/issues/edition-number";
 
 class RollbackCheck extends Error {}
 
@@ -28,6 +29,7 @@ async function main() {
     const before = {
       issues: await db.issue.count(),
       items: await db.rawItem.count(),
+      nextNumber: await nextEditionNumber(db),
     };
     const owner = lease;
     try {
@@ -148,6 +150,9 @@ async function main() {
           assert.equal(published.publishedAt?.toISOString(), now.toISOString());
           assert.equal(published.deliveryStartedAt, null);
           assert.equal(published.deliveryFinishedAt, null);
+          assert.equal(saved.editionNumber, null);
+          assert.equal(published.editionNumber, before.nextNumber);
+          assert.equal(await nextEditionNumber(tx), before.nextNumber + 1);
           assert.equal(
             await tx.rawItem.count({ where: { usedIssueId: issue.id } }),
             5,
@@ -162,6 +167,7 @@ async function main() {
             ).status,
             "already_published",
           );
+          assert.equal(await nextEditionNumber(tx), before.nextNumber + 1);
           assert.equal(
             (
               await tx.issue.findUniqueOrThrow({ where: { id: issue.id } })
@@ -190,6 +196,7 @@ async function main() {
     }
     assert.equal(await db.issue.count(), before.issues);
     assert.equal(await db.rawItem.count(), before.items);
+    assert.equal(await nextEditionNumber(db), before.nextNumber);
     console.log(
       "Publication storage checks passed; fixtures and source changes were rolled back",
     );

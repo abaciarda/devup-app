@@ -14,6 +14,7 @@ import {
   renewPipelineLease,
 } from "../lib/server/operations/lease";
 import { draftFixture } from "./draft-fixture";
+import { nextEditionNumber } from "../lib/server/issues/edition-number";
 
 class RollbackCheck extends Error {}
 
@@ -32,6 +33,7 @@ async function main() {
           const fixture = draftFixture();
           const draft = validateModelDraft(fixture.output, fixture.pool);
           assert.ok(draft);
+          const nextNumber = await nextEditionNumber(tx);
           await tx.issue.createMany({
             data: Array.from({ length: 12 }, (_, index) => {
               const key = `2099-08-${String(index + 1).padStart(2, "0")}`;
@@ -40,6 +42,7 @@ async function main() {
               content.tr.title = `Yayımlanan örnek ${key}`;
               return {
                 editionDate: new Date(`${key}T00:00:00.000Z`),
+                editionNumber: nextNumber + index,
                 generationStatus: "ready" as const,
                 content,
                 publishedAt: new Date(`${key}T09:00:00.000Z`),
@@ -58,6 +61,7 @@ async function main() {
           });
           const home = await readHomeFromDatabase(tx);
           assert.equal(home.latest?.date, "2099-08-12");
+          assert.equal(home.latest?.editionNumber, nextNumber + 11);
           assert.equal(home.previous.length, 6);
           assert.ok(
             !JSON.stringify(home).includes("private diagnostic canary"),

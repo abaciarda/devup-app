@@ -15,12 +15,17 @@ const draft = validateModelDraft(fixture.output, fixture.pool);
 assert.ok(draft);
 const row = {
   id: 123,
+  editionNumber: 2,
   editionDate: new Date("2099-08-01T00:00:00.000Z"),
   publishedAt: new Date("2099-08-01T09:00:00.000Z"),
   content: draft.content,
 };
 const issue = parsePublicIssue(row);
 assert.equal(issue.date, "2099-08-01");
+assert.equal(issue.id, 123);
+assert.equal(issue.editionNumber, 2);
+assert.equal(summarizeIssue(issue).editionNumber, 2);
+assert.throws(() => parsePublicIssue({ ...row, editionNumber: null }));
 assert.deepEqual(
   featuredStories(issue, "en").map((story) => story.rawItemId),
   [5, 3, 1],

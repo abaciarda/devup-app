@@ -90,7 +90,7 @@ async function main() {
           ...env,
           ...admin,
           NODE_ENV: "production",
-        PUBLIC_LAUNCH_APPROVED: "true",
+          PUBLIC_LAUNCH_APPROVED: "true",
           DEVUP_DELIVERY_FIXTURE: "enabled",
           EMAIL_DELIVERY_ENABLED: "true",
           RESEND_API_KEY: "re_fixture",
@@ -181,6 +181,7 @@ async function main() {
     const issue = await db.issue.create({
       data: {
         editionDate: new Date("2099-11-12T00:00:00Z"),
+        editionNumber: 1,
         generationStatus: "ready",
         content: emailFixture().issue.content,
         publishedAt: new Date(),

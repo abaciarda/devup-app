@@ -45,7 +45,8 @@ async function IssuePreview({ params, searchParams }: PreviewProps) {
       )}
       <header className="space-y-2">
         <h1 className="text-3xl font-semibold">
-          Issue #{issue.id} · {issue.editionDate.toISOString().slice(0, 10)}
+          {issue.publishedAt ? "Edition" : "Draft · next edition"} #
+          {issue.displayNumber} · {issue.editionDate.toISOString().slice(0, 10)}
         </h1>
         <p>
           {issue.generationStatus} ·{" "}

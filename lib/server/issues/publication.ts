@@ -15,6 +15,7 @@ import {
 import { constantTimeEqual, hashToken } from "../shared/security";
 import { normalizeStoryUrl } from "../sources/text";
 import { sourceKeySchema } from "../shared/validation";
+import { nextEditionNumber } from "./edition-number";
 
 export const publicationErrorSchema = z.enum([
   "issue_not_found",
@@ -79,6 +80,7 @@ export async function publishDraftInTransaction(
 ): Promise<Exclude<PublicationResult, { status: "busy" }>> {
   const approval = publicationApprovalSchema.parse(input);
   z.date().parse(now);
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended('devup:edition-number', 0))`;
   const issue = await tx.issue.findUnique({
     where: { id: approval.issueId },
     include: { rawItems: { include: { source: true } } },
@@ -172,7 +174,7 @@ export async function publishDraftInTransaction(
       deliveryStartedAt: null,
       deliveryFinishedAt: null,
     },
-    data: { publishedAt: now },
+    data: { publishedAt: now, editionNumber: await nextEditionNumber(tx) },
   });
   if (changed.count !== 1) throw new PublicationError("review_changed");
   return { status: "published", issueId: issue.id, editionKey: key };

@@ -24,19 +24,26 @@ const recipientSchema = z.strictObject({
 
 const confirmationInputSchema = recipientSchema.extend({ token: tokenSchema });
 const digestInputSchema = recipientSchema.extend({
-  issue: z.strictObject({
-    id: z.number().int().positive(),
-    date: z.string().refine((value) => {
-      try {
-        editionDateFromKey(value);
-        return true;
-      } catch {
-        return false;
-      }
-    }),
-    publishedAt: z.date(),
-    content: issueContentSchema,
-  }),
+  issue: z
+    .strictObject({
+      id: z.number().int().positive(),
+      editionNumber: z.number().int().positive(),
+      draft: z.boolean().default(false),
+      date: z.string().refine((value) => {
+        try {
+          editionDateFromKey(value);
+          return true;
+        } catch {
+          return false;
+        }
+      }),
+      publishedAt: z.date().nullable(),
+      content: issueContentSchema,
+    })
+    .refine(
+      (issue) => issue.draft || issue.publishedAt !== null,
+      "Published timestamp is required for delivery",
+    ),
   unsubscribeToken: tokenSchema,
   preferencesToken: tokenSchema,
 });
@@ -63,7 +70,6 @@ export async function renderConfirmationEmail(
       language={input.language}
       confirmationUrl={capabilityLink(settings, "/confirm", input.token)}
       replyTo={settings.EMAIL_REPLY_TO}
-      postalAddress={settings.POSTAL_ADDRESS}
     />,
   );
   return frozenEmailSchema.parse({
@@ -97,6 +103,7 @@ export async function renderDigestEmail(
       year: "numeric",
       month: "long",
       day: "numeric",
+      weekday: "long",
     },
   ).format(new Date(`${input.issue.date}T00:00:00.000Z`));
   const html = await render(
@@ -104,7 +111,8 @@ export async function renderDigestEmail(
       language={input.language}
       edition={edition}
       featuredRawItemIds={input.issue.content.featuredRawItemIds}
-      issueNumber={input.issue.id}
+      issueNumber={input.issue.editionNumber}
+      draft={input.issue.draft}
       dateLabel={dateLabel}
       webUrl={siteLink(settings, `/digest/${input.issue.date}`)}
       preferencesUrl={capabilityLink(
@@ -118,7 +126,6 @@ export async function renderDigestEmail(
         input.unsubscribeToken,
       )}
       replyTo={settings.EMAIL_REPLY_TO}
-      postalAddress={settings.POSTAL_ADDRESS}
     />,
   );
   return frozenEmailSchema.parse({
@@ -127,7 +134,9 @@ export async function renderDigestEmail(
       from: settings.EMAIL_FROM,
       to: [input.email],
       reply_to: settings.EMAIL_REPLY_TO,
-      subject: emailSubject(`devup #${input.issue.id} · ${edition.title}`),
+      subject: emailSubject(
+        `devup ${input.issue.draft ? "preview " : ""}#${input.issue.editionNumber} · ${edition.title}`,
+      ),
       html,
       text: plainText(html),
       headers: {

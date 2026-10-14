@@ -88,7 +88,8 @@ async function AdminWorkspace({ searchParams }: { searchParams: Search }) {
                   prefetch={false}
                   className="font-medium underline"
                 >
-                  Issue #{issue.id} ·{" "}
+                  {issue.publishedAt ? "Edition" : "Draft · next edition"} #
+                  {issue.displayNumber} ·{" "}
                   {issue.editionDate.toISOString().slice(0, 10)}
                 </Link>
                 <p className="text-sm">

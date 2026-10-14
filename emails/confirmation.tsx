@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Button, Heading, Text } from "react-email";
 import type { EmailLanguage } from "../lib/email/settings";
-import EmailLayout from "./layout";
+import EmailLayout, { emailColors } from "./layout";
 
 export const confirmationCopy = {
   en: {
@@ -24,12 +24,10 @@ export default function ConfirmationEmail({
   language,
   confirmationUrl,
   replyTo,
-  postalAddress,
 }: {
   language: EmailLanguage;
   confirmationUrl: string;
   replyTo: string;
-  postalAddress: string;
 }) {
   const copy = confirmationCopy[language];
   return (
@@ -37,24 +35,53 @@ export default function ConfirmationEmail({
       language={language}
       preview={copy.subject}
       replyTo={replyTo}
-      postalAddress={postalAddress}
     >
-      <Heading as="h1" style={{ fontSize: "24px", lineHeight: "32px" }}>
+      <Heading
+        as="h1"
+        className="email-title"
+        style={{
+          color: emailColors.ink,
+          fontSize: "32px",
+          fontWeight: 600,
+          lineHeight: "40px",
+          letterSpacing: "-0.8px",
+          margin: "36px 0 18px",
+        }}
+      >
         {copy.heading}
       </Heading>
-      <Text style={{ fontSize: "16px", lineHeight: "26px" }}>{copy.body}</Text>
+      <Text
+        style={{
+          color: emailColors.ink,
+          fontSize: "17px",
+          lineHeight: "26px",
+          letterSpacing: "-0.374px",
+          margin: "0 0 24px",
+        }}
+      >
+        {copy.body}
+      </Text>
       <Button
         href={confirmationUrl}
         style={{
-          backgroundColor: "#0071e3",
+          backgroundColor: emailColors.primary,
           color: "#ffffff",
-          padding: "14px 20px",
+          padding: "15px 24px",
           borderRadius: "8px",
+          fontSize: "14px",
+          fontWeight: 600,
         }}
       >
         {copy.button}
       </Button>
-      <Text style={{ fontSize: "13px", lineHeight: "22px", color: "#59595e" }}>
+      <Text
+        style={{
+          fontSize: "12px",
+          lineHeight: "21px",
+          color: emailColors.muted,
+          margin: "24px 0 0",
+        }}
+      >
         {copy.note}
       </Text>
     </EmailLayout>

@@ -59,6 +59,32 @@ for (const language of ["en", "tr"] as const) {
     preferencesToken: fixture.preferencesToken,
   };
   const digest = await renderDigestEmail(digestInput, fixture.settings);
+  assert.ok(
+    digest.payload.subject.startsWith(
+      `devup #${fixture.issue.editionNumber} ·`,
+    ),
+  );
+  assert.ok(!digest.payload.subject.includes(`#${fixture.issue.id}`));
+  const draft = await renderDigestEmail(
+    {
+      ...digestInput,
+      issue: { ...fixture.issue, publishedAt: null, draft: true },
+    },
+    fixture.settings,
+  );
+  assert.ok(
+    draft.payload.text.includes(
+      language === "tr"
+        ? "Taslak · sonraki sayı #2"
+        : "Draft · next edition #2",
+    ),
+  );
+  await assert.rejects(() =>
+    renderDigestEmail(
+      { ...digestInput, issue: { ...fixture.issue, editionNumber: undefined } },
+      fixture.settings,
+    ),
+  );
   assert.match(confirmation.payload.html, new RegExp(`lang="${language}"`));
   assert.match(digest.payload.html, new RegExp(`lang="${language}"`));
   assert.ok(

@@ -114,6 +114,7 @@ async function main() {
     const oldIssue = await db.issue.create({
       data: {
         editionDate: new Date("2099-12-10T00:00:00Z"),
+        editionNumber: 1,
         content: fixture.issue.content,
         publishedAt: new Date(),
         deliveryStartedAt: new Date(),
@@ -146,6 +147,7 @@ async function main() {
     const freshIssue = await db.issue.create({
       data: {
         editionDate: new Date("2099-12-11T00:00:00Z"),
+        editionNumber: 2,
         content: fixture.issue.content,
         publishedAt: new Date(),
       },
@@ -161,6 +163,7 @@ async function main() {
     const orphan = await db.issue.create({
       data: {
         editionDate: new Date("2099-12-09T00:00:00Z"),
+        editionNumber: 3,
         publishedAt: new Date(),
         deliveryStartedAt: new Date(),
       },

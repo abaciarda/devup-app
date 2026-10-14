@@ -29,7 +29,7 @@ export default function ArchiveSection({ issues }: { issues: IssueSummary[] }) {
             >
               <div>
                 <p className="text-xs text-[#b1b1b6]">
-                  {issue.date} · #{issue.id}
+                  {issue.date} · #{issue.editionNumber}
                 </p>
                 <h3 className="mt-1.5 text-[19px] font-semibold">
                   {issue.titles[language]}

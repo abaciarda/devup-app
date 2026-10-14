@@ -68,6 +68,7 @@ model RawItem {
 
 model Issue {
   id                          Int              @id @default(autoincrement())
+  editionNumber               Int?             @unique
   editionDate                 DateTime         @unique @db.Date
   generationStatus            GenerationStatus @default(draft)
   content                     Json?

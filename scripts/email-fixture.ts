@@ -20,11 +20,12 @@ export function emailFixture() {
     settings: parseEmailSettings({
       SITE_URL: "https://devup.example",
       EMAIL_FROM: "devup <news@devup.example>",
-      EMAIL_REPLY_TO: "hello@devup.example",
-      POSTAL_ADDRESS: "Example operator, Example Street 1, Istanbul, Türkiye",
+      EMAIL_REPLY_TO: "ardaabaci19@gmail.com",
+      POSTAL_ADDRESS: "Sender postal address (preview only)",
     }),
     issue: {
       id: 123,
+      editionNumber: 2,
       date: "2099-04-01",
       publishedAt: new Date("2099-04-01T09:00:00.000Z"),
       content: issueContentSchema.parse({

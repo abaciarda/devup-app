@@ -8,7 +8,10 @@ import { getDb } from "../database/client";
 import { emailEnv } from "./sender-env";
 import { subscriptionEnv } from "../subscriptions/env";
 import { createSubscriberLink } from "../subscriptions/links";
-import { commitUnderPipelineLease, type PipelineLease } from "../operations/lease";
+import {
+  commitUnderPipelineLease,
+  type PipelineLease,
+} from "../operations/lease";
 
 export type SnapshotEntry = {
   id: string;
@@ -83,6 +86,8 @@ export async function snapshotPublishedIssue(
   const issue = await db.issue.findUniqueOrThrow({ where: { id: issueId } });
   if (!issue.publishedAt) throw new Error("Publish the issue before delivery");
   if (issue.deliveryStartedAt) return;
+  if (!issue.editionNumber)
+    throw new Error("Published edition number is missing");
   const content = issueContentSchema.parse(issue.content);
   const capturedAt = new Date();
   const subscribers = await db.subscriber.findMany({
@@ -115,6 +120,7 @@ export async function snapshotPublishedIssue(
         language: subscriber.language,
         issue: {
           id: issue.id,
+          editionNumber: issue.editionNumber,
           date: issue.editionDate.toISOString().slice(0, 10),
           publishedAt: issue.publishedAt,
           content,

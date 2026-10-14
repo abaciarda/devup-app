@@ -23,7 +23,7 @@ export default function TodaySection({ issue }: { issue: PublicIssue | null }) {
       <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
         <div>
           <p className={eyebrow}>
-            {copy.latest} · #{issue.id}
+            {copy.latest} · #{issue.editionNumber}
           </p>
           <h2 className="mt-4 max-w-[800px] text-[34px] font-semibold leading-tight tracking-[-1.3px] sm:text-[42px]">
             {edition.title}

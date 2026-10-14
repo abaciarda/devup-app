@@ -9,6 +9,7 @@ import { getDb } from "../database/client";
 type Reader = Pick<Prisma.TransactionClient, "issue">;
 const publicSelect = {
   id: true,
+  editionNumber: true,
   editionDate: true,
   publishedAt: true,
   content: true,

@@ -10,6 +10,7 @@ import type {
 
 const publicRowSchema = z.strictObject({
   id: z.number().int().positive(),
+  editionNumber: z.number().int().positive(),
   editionDate: z.date(),
   publishedAt: z.date(),
   content: issueContentSchema,
@@ -19,6 +20,7 @@ export function parsePublicIssue(value: unknown): PublicIssue {
   const row = publicRowSchema.parse(value);
   return {
     id: row.id,
+    editionNumber: row.editionNumber,
     date: row.editionDate.toISOString().slice(0, 10),
     publishedAt: row.publishedAt.toISOString(),
     content: row.content,
@@ -28,6 +30,7 @@ export function parsePublicIssue(value: unknown): PublicIssue {
 export function summarizeIssue(issue: PublicIssue): IssueSummary {
   return {
     id: issue.id,
+    editionNumber: issue.editionNumber,
     date: issue.date,
     titles: { tr: issue.content.tr.title, en: issue.content.en.title },
     storyCount: issue.content.en.news.length,
