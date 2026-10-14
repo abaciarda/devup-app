@@ -2,8 +2,10 @@ import "server-only";
 import { z } from "zod";
 import { issueContentSchema } from "../../types/issue-content";
 import { requireAdmin } from "./admin-auth";
+import { sourceKeys } from "./candidates";
 import { getDb } from "./db";
 import { evidenceSchema } from "./draft-content";
+import { issueReviewVersion } from "./publication";
 
 const storedEvidenceSchema = z.object({
   savedDraft: z.object({ evidence: evidenceSchema }).nullable(),
@@ -25,6 +27,15 @@ export async function listAdminIssues() {
   });
 }
 
+export async function listAdminSources() {
+  await requireAdmin();
+  return getDb().source.findMany({
+    where: { key: { in: sourceKeys } },
+    orderBy: { key: "asc" },
+    select: { key: true, enabled: true },
+  });
+}
+
 export async function readAdminIssue(input: string) {
   await requireAdmin();
   if (!/^[1-9]\d{0,9}$/.test(input)) return null;
@@ -41,14 +52,12 @@ export async function readAdminIssue(input: string) {
       content: true,
       generationUsage: true,
       publishedAt: true,
+      updatedAt: true,
     },
   });
   if (!issue) return null;
   const content = issueContentSchema.safeParse(issue.content);
   const metadata = storedEvidenceSchema.safeParse(issue.generationUsage);
-  const evidence = metadata.success
-    ? (metadata.data.savedDraft?.evidence ?? [])
-    : [];
   return {
     id: issue.id,
     editionDate: issue.editionDate,
@@ -58,6 +67,11 @@ export async function readAdminIssue(input: string) {
     publishedAt: issue.publishedAt,
     content: content.success ? content.data : null,
     invalidContent: issue.content !== null && !content.success,
-    evidence,
+    evidence: metadata.success
+      ? (metadata.data.savedDraft?.evidence ?? [])
+      : [],
+    reviewVersion: content.success
+      ? issueReviewVersion(content.data, issue.updatedAt)
+      : null,
   };
 }

@@ -28,7 +28,9 @@
     "draft:check": "node --conditions=react-server --import tsx scripts/check-drafts.ts",
     "db:check-drafts": "node --conditions=react-server --import tsx scripts/check-draft-storage.ts",
     "issue:generate": "node --conditions=react-server --import tsx scripts/generate-issue.ts",
-    "admin:check": "node --conditions=react-server --import tsx scripts/check-admin.ts"
+    "admin:check": "node --conditions=react-server --import tsx scripts/check-admin.ts",
+    "publication:check": "node --conditions=react-server --import tsx scripts/check-publication.ts",
+    "db:check-publication": "node --conditions=react-server --import tsx scripts/check-publication-storage.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",
