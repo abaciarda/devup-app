@@ -5,6 +5,7 @@ import { getDb } from "../database/client";
 import {
   hasUsefulSourceText,
   isNewsPost,
+  newsRejection,
   normalizeStoryUrl,
 } from "./text";
 import { sourceKeySchema, type SourceKey } from "../shared/validation";
@@ -13,6 +14,7 @@ export const sourceKeys: SourceKey[] = ["hackernews", "devto", "lobsters"];
 
 const rowSchema = z.object({
   id: z.number().int().positive(),
+  externalId: z.string().optional(),
   title: z.string(),
   originalUrl: z.string(),
   normalizedUrl: z.string(),
@@ -35,6 +37,7 @@ export type Candidate = {
   publishedAt: Date;
   tags: string[];
   sourceRank: number;
+  discussionUrl?: string;
 };
 
 export function prepareCandidates(
@@ -62,7 +65,8 @@ export function prepareCandidates(
       row.fetchedAt.getTime() < recentFetch ||
       row.fetchedAt.getTime() > now.getTime() + 300_000 ||
       !hasUsefulSourceText(row.excerpt) ||
-      !isNewsPost(row.title, row.tags)
+      !isNewsPost(row.title, row.tags) ||
+      newsRejection(row.title, row.tags, row.excerpt) !== null
     )
       continue;
 
@@ -118,12 +122,37 @@ export function prepareCandidates(
         publishedAt: row.publishedAt,
         tags: row.tags,
         sourceRank: group.length === 1 ? 1 : 1 - index / (group.length - 1),
+        ...(key === "hackernews" && /^\d+$/.test(row.externalId ?? "")
+          ? {
+              discussionUrl: `https://news.ycombinator.com/item?id=${row.externalId}`,
+            }
+          : key === "lobsters" && /^[a-z0-9]{1,20}$/.test(row.externalId ?? "")
+            ? { discussionUrl: `https://lobste.rs/s/${row.externalId}` }
+            : {}),
       });
       seenUrls.add(row.normalizedUrl);
       counts.set(key, (counts.get(key) ?? 0) + 1);
     }
   }
-  return pool;
+  const domainCounts = new Map<string, number>();
+  const ordered: Candidate[] = [];
+  const remaining = [...pool];
+  for (let allowance = 1; remaining.length; allowance++) {
+    for (let index = 0; index < remaining.length;) {
+      const candidate = remaining[index];
+      const domain = new URL(candidate.originalUrl).hostname.replace(
+        /^www\./,
+        "",
+      );
+      const count = domainCounts.get(domain) ?? 0;
+      if (count < allowance) {
+        ordered.push(candidate);
+        domainCounts.set(domain, count + 1);
+        remaining.splice(index, 1);
+      } else index++;
+    }
+  }
+  return ordered;
 }
 
 export async function loadCandidatePool(

@@ -8,6 +8,10 @@ const copy = {
   en: {
     web: "Read on the website",
     source: "Original source",
+    contents: "In this edition",
+    main: "Main stories",
+    briefs: "Brief updates",
+    discussion: "discussion",
     preferences: "Email language",
     unsubscribe: "Unsubscribe",
     reason:
@@ -16,6 +20,10 @@ const copy = {
   tr: {
     web: "Web sitesinde oku",
     source: "Orijinal kaynak",
+    contents: "Bu sayıda",
+    main: "Ana haberler",
+    briefs: "Kısa haberler",
+    discussion: "yorumları",
     preferences: "E-posta dili",
     unsubscribe: "Abonelikten çık",
     reason: "Bu e-postayı devup aboneliğinizi onayladığınız için alıyorsunuz.",
@@ -31,6 +39,7 @@ const sources = {
 export default function DigestEmail({
   language,
   edition,
+  featuredRawItemIds,
   issueNumber,
   dateLabel,
   webUrl,
@@ -41,6 +50,7 @@ export default function DigestEmail({
 }: {
   language: EmailLanguage;
   edition: LocalizedIssueContent;
+  featuredRawItemIds: number[];
   issueNumber: number;
   dateLabel: string;
   webUrl: string;
@@ -50,6 +60,19 @@ export default function DigestEmail({
   postalAddress: string;
 }) {
   const labels = copy[language];
+  const featured = new Set(featuredRawItemIds);
+  const groups = [
+    {
+      heading: labels.main,
+      stories: edition.news.filter((story) => featured.has(story.rawItemId)),
+      brief: false,
+    },
+    {
+      heading: labels.briefs,
+      stories: edition.news.filter((story) => !featured.has(story.rawItemId)),
+      brief: true,
+    },
+  ];
   return (
     <EmailLayout
       language={language}
@@ -67,19 +90,55 @@ export default function DigestEmail({
         {edition.intro}
       </Text>
       <Link href={webUrl}>{labels.web}</Link>
-      {edition.news.map((story) => (
-        <Section key={story.rawItemId}>
-          <Hr style={{ borderColor: "#e5e5e7", marginTop: "24px" }} />
-          <Text style={{ color: "#59595e", fontSize: "12px" }}>
-            {sources[story.sourceKey]}
-          </Text>
-          <Heading as="h2" style={{ fontSize: "20px", lineHeight: "28px" }}>
+      <Section>
+        <Heading as="h2" style={{ fontSize: "18px", marginTop: "24px" }}>
+          {labels.contents}
+        </Heading>
+        {edition.news.map((story) => (
+          <Text
+            key={story.rawItemId}
+            style={{ fontSize: "14px", margin: "6px 0" }}
+          >
             {story.title}
-          </Heading>
-          <Text style={{ fontSize: "15px", lineHeight: "25px" }}>
-            {story.summary}
           </Text>
-          <Link href={story.url}>{labels.source}</Link>
+        ))}
+      </Section>
+      {groups.map((group) => (
+        <Section key={group.heading}>
+          <Heading as="h2" style={{ fontSize: "22px", marginTop: "28px" }}>
+            {group.heading}
+          </Heading>
+          {group.stories.map((story) => (
+            <Section key={story.rawItemId}>
+              <Hr style={{ borderColor: "#e5e5e7", marginTop: "24px" }} />
+              <Text style={{ color: "#59595e", fontSize: "12px" }}>
+                {new URL(story.url).hostname.replace(/^www\./, "")}
+              </Text>
+              <Heading
+                as="h3"
+                style={{
+                  fontSize: group.brief ? "17px" : "20px",
+                  lineHeight: "28px",
+                }}
+              >
+                {story.title}
+              </Heading>
+              <Text style={{ fontSize: "15px", lineHeight: "25px" }}>
+                {story.summary}
+              </Text>
+              <Link href={story.url}>
+                {new URL(story.url).hostname.replace(/^www\./, "")}
+              </Link>
+              {story.discussionUrl && (
+                <>
+                  {" · "}
+                  <Link href={story.discussionUrl}>
+                    {sources[story.sourceKey]} {labels.discussion}
+                  </Link>
+                </>
+              )}
+            </Section>
+          ))}
         </Section>
       ))}
       <Hr style={{ borderColor: "#e5e5e7", marginTop: "28px" }} />

@@ -16,6 +16,7 @@ export const newsStorySchema = z.strictObject({
   title: z.string().trim().min(5).max(180),
   summary: z.string().trim().min(40).max(1000),
   url: httpUrlSchema,
+  discussionUrl: httpUrlSchema.optional(),
 });
 
 export const localizedIssueSchema = z.strictObject({
@@ -73,7 +74,8 @@ export const issueContentSchema = z
         story.rawItemId !== translated.rawItemId ||
         story.category !== translated.category ||
         story.sourceKey !== translated.sourceKey ||
-        story.url !== translated.url
+        story.url !== translated.url ||
+        story.discussionUrl !== translated.discussionUrl
       ) {
         report(
           ["en", "news", index],

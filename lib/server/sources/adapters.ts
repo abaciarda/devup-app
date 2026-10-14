@@ -7,7 +7,14 @@ import {
   type SourceKey,
 } from "../shared/validation";
 import { fetchSourceJson, sourceErrorCode, SourceFetchError } from "./http";
-import { isNewsPost, normalizeStoryUrl, plainSourceText } from "./text";
+import {
+  hasUsefulSourceText,
+  isNewsPost,
+  newsRejection,
+  normalizeStoryUrl,
+  plainSourceText,
+} from "./text";
+import { ArticleError, readArticle } from "./articles";
 
 export type SourceBatch = {
   items: RawItemInput[];
@@ -15,6 +22,7 @@ export type SourceBatch = {
   listed: number;
   rejected: number;
   errors: string[];
+  exclusions?: Record<string, number>;
 };
 
 export type SourceContext = {
@@ -22,6 +30,7 @@ export type SourceContext = {
   signal: AbortSignal;
   fetcher?: typeof fetch;
   pause?: (signal: AbortSignal) => Promise<void>;
+  articleReader?: typeof readArticle;
 };
 
 const arraySchema = z.array(z.unknown()).max(1000);
@@ -73,12 +82,34 @@ function newBatch(): SourceBatch {
     listed: 0,
     rejected: 0,
     errors: [],
+    exclusions: {},
   };
 }
 
 function fresh(date: Date, now: Date): boolean {
   const age = now.getTime() - date.getTime();
   return Number.isFinite(age) && age >= -300_000 && age <= 72 * 60 * 60 * 1000;
+}
+
+function exclude(batch: SourceBatch, reason: string): void {
+  batch.exclusions ??= {};
+  batch.exclusions[reason] = (batch.exclusions[reason] ?? 0) + 1;
+}
+
+async function articleText(
+  batch: SourceBatch,
+  url: string,
+  context: SourceContext,
+): Promise<string> {
+  try {
+    return await (context.articleReader ?? readArticle)(url, context.signal);
+  } catch (error) {
+    exclude(
+      batch,
+      error instanceof ArticleError ? error.code : "article_network_or_timeout",
+    );
+    return "";
+  }
 }
 
 function addItem(batch: SourceBatch, input: RawItemInput, now: Date): void {
@@ -91,6 +122,17 @@ function addItem(batch: SourceBatch, input: RawItemInput, now: Date): void {
       !isNewsPost(item.title, item.tags)
     ) {
       batch.rejected += 1;
+      return;
+    }
+    if (!hasUsefulSourceText(item.excerpt)) {
+      batch.rejected += 1;
+      exclude(batch, "insufficient_evidence");
+      return;
+    }
+    const reason = newsRejection(item.title, item.tags, item.excerpt);
+    if (reason) {
+      batch.rejected += 1;
+      exclude(batch, reason);
       return;
     }
     batch.items.push(item);
@@ -151,6 +193,16 @@ async function hackerNews(
             batch.rejected += 1;
             continue;
           }
+          if (
+            !fresh(new Date(item.time * 1000), context.now) ||
+            !isNewsPost(item.title, [])
+          ) {
+            batch.rejected += 1;
+            continue;
+          }
+          const excerpt = item.url
+            ? await articleText(batch, item.url, context)
+            : plainSourceText(item.text ?? "");
           addItem(
             batch,
             {
@@ -159,7 +211,7 @@ async function hackerNews(
               title: plainSourceText(item.title, 500),
               originalUrl:
                 item.url || `https://news.ycombinator.com/item?id=${id}`,
-              excerpt: plainSourceText(item.text ?? ""),
+              excerpt,
               publishedAt: new Date(item.time * 1000),
               score: item.score,
               tags: [],
@@ -203,6 +255,23 @@ async function devto(
       !fresh(new Date(listed.data.published_timestamp), context.now)
     ) {
       batch.rejected += 1;
+      continue;
+    }
+
+    const listedTags = Array.isArray(listed.data.tag_list)
+      ? listed.data.tag_list
+      : listed.data.tag_list.split(",").map((tag) => tag.trim());
+    const earlyReason = newsRejection(listed.data.title, listedTags);
+    if (
+      earlyReason &&
+      [
+        "not_news",
+        "community_or_lifestyle",
+        "tutorial_or_personal_post",
+      ].includes(earlyReason)
+    ) {
+      batch.rejected += 1;
+      exclude(batch, earlyReason);
       continue;
     }
 
@@ -281,6 +350,16 @@ async function lobsters(
       continue;
     }
     const story = parsed.data;
+    if (
+      !fresh(new Date(story.created_at), context.now) ||
+      !isNewsPost(story.title, story.tags)
+    ) {
+      batch.rejected += 1;
+      continue;
+    }
+    const excerpt = story.url
+      ? await articleText(batch, story.url, context)
+      : plainSourceText(story.description_plain || story.description);
     addItem(
       batch,
       {
@@ -288,7 +367,7 @@ async function lobsters(
         externalId: story.short_id,
         title: plainSourceText(story.title, 500),
         originalUrl: story.url || `https://lobste.rs/s/${story.short_id}`,
-        excerpt: plainSourceText(story.description_plain || story.description),
+        excerpt,
         publishedAt: new Date(story.created_at),
         score: story.score,
         tags: story.tags

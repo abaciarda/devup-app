@@ -81,6 +81,7 @@ const context = {
   signal,
   fetcher: fakeFetch,
   pause: async () => undefined,
+  articleReader: async () => text,
 };
 const hn = await fetchSource("hackernews", 3, context);
 const dev = await fetchSource("devto", 3, context);

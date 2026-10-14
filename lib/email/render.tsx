@@ -47,6 +47,7 @@ function plainText(html: string): string {
     selectors: [
       { selector: "h1", options: { uppercase: false } },
       { selector: "h2", options: { uppercase: false } },
+      { selector: "h3", options: { uppercase: false } },
     ],
   });
 }
@@ -102,6 +103,7 @@ export async function renderDigestEmail(
     <DigestEmail
       language={input.language}
       edition={edition}
+      featuredRawItemIds={input.issue.content.featuredRawItemIds}
       issueNumber={input.issue.id}
       dateLabel={dateLabel}
       webUrl={siteLink(settings, `/digest/${input.issue.date}`)}

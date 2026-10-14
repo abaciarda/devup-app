@@ -48,6 +48,10 @@ async function AdminWorkspace({ searchParams }: { searchParams: Search }) {
             >
               <p>
                 {source.key} · {source.enabled ? "Enabled" : "Disabled"}
+                <span className="mt-1 block text-sm text-muted">
+                  {source._count.rawItems} stored · {source.candidateCount}{" "}
+                  ready unused candidates
+                </span>
               </p>
               <form action="/api/admin/sources" method="post">
                 <input type="hidden" name="sourceKey" value={source.key} />

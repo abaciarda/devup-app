@@ -67,6 +67,21 @@ for (const language of ["en", "tr"] as const) {
   assert.ok(digest.payload.text.includes(`/digest/${fixture.issue.date}`));
   assert.ok(
     digest.payload.text.includes(
+      language === "tr" ? "Bu sayıda" : "In this edition",
+    ),
+  );
+  assert.ok(
+    digest.payload.text.includes(
+      language === "tr" ? "Ana haberler" : "Main stories",
+    ),
+  );
+  assert.ok(
+    digest.payload.text.includes(
+      language === "tr" ? "Kısa haberler" : "Brief updates",
+    ),
+  );
+  assert.ok(
+    digest.payload.text.includes(
       `/unsubscribe?token=${fixture.unsubscribeToken}`,
     ),
   );

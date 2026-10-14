@@ -9,11 +9,7 @@ import {
   releasePipelineLease,
   type PipelineLease,
 } from "../operations/lease";
-import {
-  fetchSource,
-  type SourceBatch,
-  type SourceContext,
-} from "./adapters";
+import { fetchSource, type SourceBatch, type SourceContext } from "./adapters";
 import { sourceErrorCode } from "./http";
 import { normalizeStoryUrl } from "./text";
 import { rawItemInputSchema, type SourceKey } from "../shared/validation";
@@ -110,6 +106,7 @@ export type SourceReport = {
   preserved: number;
   removed: number;
   errors: string[];
+  exclusions?: Record<string, number>;
 };
 
 export type RefreshResult =
@@ -122,7 +119,7 @@ export type RefreshResult =
     };
 
 export async function refreshSources(
-  options: Pick<SourceContext, "fetcher" | "pause"> & {
+  options: Pick<SourceContext, "fetcher" | "pause" | "articleReader"> & {
     lease?: PipelineLease;
   } = {},
 ): Promise<RefreshResult> {
@@ -167,6 +164,7 @@ export async function refreshSources(
           const batch = await fetchSource(key, config.data.limit, {
             fetcher: options.fetcher,
             pause: options.pause,
+            articleReader: options.articleReader,
             now,
             signal: AbortSignal.any([deadline, AbortSignal.timeout(45_000)]),
           });
@@ -174,6 +172,7 @@ export async function refreshSources(
           report.received = batch.items.length;
           report.rejected = batch.rejected;
           report.errors = batch.errors;
+          report.exclusions = batch.exclusions;
           if (batch.errors.length > 0) report.status = "partial";
           return { report, batch };
         } catch (error) {

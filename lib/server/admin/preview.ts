@@ -2,7 +2,7 @@ import "server-only";
 import { z } from "zod";
 import { issueContentSchema } from "../../../types/issue-content";
 import { requireAdmin } from "./auth";
-import { sourceKeys } from "../sources/candidates";
+import { loadCandidatePool, sourceKeys } from "../sources/candidates";
 import { getDb } from "../database/client";
 import { evidenceSchema } from "../issues/draft-content";
 import { issueReviewVersion } from "../issues/publication";
@@ -29,11 +29,24 @@ export async function listAdminIssues() {
 
 export async function listAdminSources() {
   await requireAdmin();
-  return getDb().source.findMany({
-    where: { key: { in: sourceKeys } },
-    orderBy: { key: "asc" },
-    select: { key: true, enabled: true },
-  });
+  const [sources, candidates] = await Promise.all([
+    getDb().source.findMany({
+      where: { key: { in: sourceKeys } },
+      orderBy: { key: "asc" },
+      select: {
+        key: true,
+        enabled: true,
+        _count: { select: { rawItems: true } },
+      },
+    }),
+    loadCandidatePool(),
+  ]);
+  return sources.map((source) => ({
+    ...source,
+    candidateCount: candidates.filter(
+      (candidate) => candidate.sourceKey === source.key,
+    ).length,
+  }));
 }
 
 export async function readAdminIssue(input: string) {

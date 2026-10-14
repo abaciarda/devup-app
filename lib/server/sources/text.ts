@@ -79,3 +79,43 @@ export function hasUsefulSourceText(text: string): boolean {
   const trimmed = text.trim();
   return trimmed.length >= 300 && trimmed.split(/\s+/).length >= 40;
 }
+
+export function newsRejection(
+  title: string,
+  tags: string[],
+  text = "",
+): string | null {
+  if (!isNewsPost(title, tags)) return "not_news";
+  if (
+    /\b(pets?|gardening|garden trials|watercooler|weekend|dev pet corner|coffee chat)\b/i.test(
+      title,
+    ) ||
+    tags.some((tag) =>
+      ["watercooler", "introductions", "devchallenge"].includes(
+        tag.toLowerCase(),
+      ),
+    )
+  )
+    return "community_or_lifestyle";
+  if (
+    /^(?:how to|a beginner['’]?s|getting started|step.by.step|i built|my first|why i|what i learned)\b/i.test(
+      title,
+    ) ||
+    tags.some((tag) => ["tutorial", "beginners"].includes(tag.toLowerCase()))
+  )
+    return "tutorial_or_personal_post";
+  const evidence = `${title} ${tags.join(" ")} ${text.slice(0, 3000)}`;
+  if (
+    !/\b(ai|llm|models?|software|developers?|programming|code|coding|security|vulnerabilit\w*|rust|python|javascript|typescript|linux|database|postgres\w*|sqlite|browser|gpu|inference|open.source|compiler|api|cloud|encryption|machine learning|benchmark|research|algorithm|computing|hardware|devops|network\w*|internet|http|infrastructure)\b/i.test(
+      evidence,
+    )
+  )
+    return "not_technology";
+  if (
+    !/\b(releas\w*|launch\w*|announc\w*|introduc\w*|updat\w*|new|adds?|improv\w*|discov\w*|research|paper|benchmark|vulnerabilit\w*|breach|acqui\w*|deprecat\w*|security|v\d|\d+\.\d+)\b/i.test(
+      evidence,
+    )
+  )
+    return "no_concrete_development";
+  return null;
+}

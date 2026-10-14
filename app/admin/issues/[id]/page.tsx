@@ -102,6 +102,16 @@ async function IssuePreview({ params, searchParams }: PreviewProps) {
                   >
                     Open original source
                   </a>
+                  {story.discussionUrl && (
+                    <a
+                      href={story.discussionUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block text-sm underline"
+                    >
+                      Open community discussion
+                    </a>
+                  )}
                   {quotes.has(story.rawItemId) ? (
                     <blockquote className="border-l-2 border-line pl-4 text-sm">
                       <p>Source evidence</p>

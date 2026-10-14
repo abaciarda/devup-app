@@ -20,6 +20,7 @@ const results = await Promise.all(
         ).length,
         rejected: batch.rejected,
         errors: batch.errors,
+        exclusions: batch.exclusions,
       };
     } catch (error) {
       return { sourceKey, status: "failed", errors: [sourceErrorCode(error)] };
