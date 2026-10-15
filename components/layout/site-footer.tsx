@@ -11,7 +11,7 @@ export default function Footer() {
   return (
     <footer className="bg-pearl pt-12 pb-7 text-muted sm:pt-14">
       <div className="mx-auto max-w-[1200px] px-6 sm:px-10">
-        <div className="grid gap-x-10 gap-y-9 border-b border-line pb-10 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr]">
+        <div className="grid gap-x-10 gap-y-9 border-b border-line pb-10 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr]">
           <div>
             <Link
               href="/"
@@ -71,15 +71,19 @@ export default function Footer() {
               ))}
             </ul>
           </div>
-          <div>
-            <h2 className="text-sm font-semibold text-ink">
-              {copy.footerMorning}
-            </h2>
-            <p className="mt-4 text-sm leading-relaxed">{copy.sendTime}</p>
-          </div>
         </div>
         <div className="mt-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 text-[11px]">
-          <span>{copy.footerCopyright}</span>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <span>{copy.footerCopyright}</span>
+            <a
+              href="https://github.com/abaciarda"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue"
+            >
+              {copy.footerMadeBy} <span aria-hidden="true">↗</span>
+            </a>
+          </div>
           <Link href="/#today" className="text-blue">
             {copy.footerBack}{" "}
             <span aria-hidden="true" className="ml-2">

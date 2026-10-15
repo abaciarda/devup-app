@@ -29,18 +29,16 @@ export const messages = {
     archiveTitle: "Every edition, in one place.",
     archiveDescription:
       "Browse earlier emails and catch up on the stories you missed.",
-    footerDescription:
-      "A free, five-minute daily read summarizing technology, software, and AI news.",
+    footerDescription: "A daily tech briefing for developers.",
     footerSubscribe: "Get the daily email",
     footerDailyRead: "On the site",
     footerPrevious: "Past issues",
     footerSubscribeFree: "Get the daily email",
     footerCommunity: "Sources",
-    footerMorning: "Delivered each morning",
     footerLanguages: "Choose Turkish or English for your email.",
     footerFree: "Free, always.",
-    footerCopyright:
-      "© 2026 devup · A clear view of what’s happening across tech.",
+    footerCopyright: "© 2026 devup",
+    footerMadeBy: "Made by Arda",
     footerBack: "Back to today’s stories",
     emailLabel: "Email address",
     emailPlaceholder: "Your email address",
@@ -130,18 +128,16 @@ export const messages = {
     archiveTitle: "Tüm bültenler tek yerde.",
     archiveDescription:
       "Önceki e-postaları açın, kaçırdığınız haberleri okuyun.",
-    footerDescription:
-      "Teknoloji, yazılım ve yapay zekâ haberlerinden beş dakikalık ücretsiz bir günlük seçki.",
+    footerDescription: "Yazılımcılar için günlük teknoloji özeti.",
     footerSubscribe: "Günlük e-postayı al",
     footerDailyRead: "Sitede gezin",
     footerPrevious: "Önceki bültenler",
     footerSubscribeFree: "Günlük e-postayı al",
     footerCommunity: "Kaynaklar",
-    footerMorning: "Her sabah e-posta kutunuzda",
     footerLanguages: "E-postayı Türkçe veya İngilizce alın.",
     footerFree: "Ücretsiz.",
-    footerCopyright:
-      "© 2026 devup · Yazılım gündemini takip etmek isteyenler için.",
+    footerCopyright: "© 2026 devup",
+    footerMadeBy: "Hazırlayan Arda",
     footerBack: "Bugünün haberlerine dön",
     emailLabel: "E-posta adresi",
     emailPlaceholder: "E-posta adresiniz",
