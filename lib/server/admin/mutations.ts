@@ -23,12 +23,30 @@ export const mutationNoticeSchema = z.enum([
   "delivery_daily_limit",
   "delivery_provider_backoff",
   "operations_status",
+  "draft_ready",
+  "draft_already_ready",
+  "draft_already_published",
+  "draft_insufficient_candidates",
+  "draft_generation_failed",
+  "draft_preview_disabled",
   ...publicationErrorSchema.options,
   "operation_failed",
 ]);
 export type MutationNotice = z.infer<typeof mutationNoticeSchema>;
 
 const notices: Record<MutationNotice, string> = {
+  draft_ready:
+    "Today's private draft is ready. Review both languages and original sources before publishing. No email was sent.",
+  draft_already_ready:
+    "Today's draft is already ready. Opened it for review without replacing its content.",
+  draft_already_published:
+    "Today's edition is already published or locked for delivery. Its content was preserved.",
+  draft_insufficient_candidates:
+    "There are not enough eligible news stories to prepare a draft. Check enabled sources and ready candidate counts, then try again later.",
+  draft_generation_failed:
+    "Draft generation failed. Check the error shown on this edition and your Gemini settings before retrying. Nothing was published or sent.",
+  draft_preview_disabled:
+    "Draft preparation is disabled on preview deployments. Use your local or production workspace.",
   operations_status:
     "Operational request finished or was skipped. Check the launch settings and edition state; scheduled preparation never publishes automatically.",
   delivery_provider_backoff:

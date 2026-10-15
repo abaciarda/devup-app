@@ -8,6 +8,7 @@ import { pathToFileURL } from "node:url";
 import { Pool } from "pg";
 import { getDb } from "../lib/server/database/client";
 import { runPipeline } from "../lib/server/operations/pipeline";
+import { prepareManualDraft } from "../lib/server/operations/manual-preparation";
 import {
   acquirePipelineLease,
   releasePipelineLease,
@@ -87,6 +88,100 @@ async function main() {
     });
     assert.equal(attempted.scheduledGenerationAttempts, 1);
     assert.equal(attempted.publishedAt, null);
+    process.env.PIPELINE_ENABLED = "false";
+    const afternoon = new Date("2099-12-13T15:17:00Z");
+    const manualDependencies = {
+      now: () => afternoon,
+      refresh: async () => ({
+        status: "complete" as const,
+        sources: [],
+        candidateCount: 10,
+        enoughCandidates: true,
+      }),
+    };
+    assert.equal(
+      (
+        await prepareManualDraft({
+          ...manualDependencies,
+          refresh: async () => ({
+            status: "complete",
+            sources: [],
+            candidateCount: 0,
+            enoughCandidates: false,
+          }),
+          generate: async () => {
+            throw new Error("Insufficient candidates must not generate");
+          },
+        })
+      ).state,
+      "insufficient_candidates",
+    );
+    assert.equal(
+      (
+        await prepareManualDraft({
+          ...manualDependencies,
+          generate: async () => ({
+            status: "failed",
+            issueId: attempted.id,
+            code: "fixture",
+            keptPreviousDraft: false,
+          }),
+        })
+      ).state,
+      "generation_failed",
+    );
+    const manual = await prepareManualDraft({
+      ...manualDependencies,
+      generate: async ({ lease } = {}) => {
+        assert.ok(lease);
+        await db!.issue.update({
+          where: { id: attempted.id },
+          data: { generationStatus: "ready", content: fixture.issue.content },
+        });
+        return { status: "ready", issueId: attempted.id, storyCount: 5 };
+      },
+    });
+    assert.deepEqual(manual, { state: "ready", issueId: attempted.id });
+    assert.equal(
+      (await db.issue.findUniqueOrThrow({ where: { id: attempted.id } }))
+        .scheduledGenerationAttempts,
+      1,
+    );
+    assert.equal(
+      (await db.issue.findUniqueOrThrow({ where: { id: attempted.id } }))
+        .publishedAt,
+      null,
+    );
+    assert.equal(
+      (
+        await prepareManualDraft({
+          now: () => afternoon,
+          refresh: async () => {
+            throw new Error("Ready manual draft must not be replaced");
+          },
+        })
+      ).state,
+      "already_ready",
+    );
+    const manualLease = await acquirePipelineLease();
+    assert.ok(manualLease);
+    try {
+      assert.equal(
+        (await prepareManualDraft(manualDependencies)).state,
+        "busy",
+      );
+    } finally {
+      await releasePipelineLease(manualLease);
+    }
+    const previousDeployment = process.env.VERCEL_ENV;
+    process.env.VERCEL_ENV = "preview";
+    assert.equal(
+      (await prepareManualDraft(manualDependencies)).state,
+      "disabled",
+    );
+    if (previousDeployment === undefined) delete process.env.VERCEL_ENV;
+    else process.env.VERCEL_ENV = previousDeployment;
+    process.env.PIPELINE_ENABLED = "true";
     const readyDay = new Date("2099-12-14T04:17:00Z");
     const ready = await db.issue.create({
       data: {
@@ -152,6 +247,17 @@ async function main() {
         publishedAt: new Date(),
       },
     });
+    assert.equal(
+      (
+        await prepareManualDraft({
+          now: () => new Date("2099-12-11T15:00:00Z"),
+          refresh: async () => {
+            throw new Error("Published issue must not be refreshed");
+          },
+        })
+      ).state,
+      "published",
+    );
     await runPipeline("delivery", {
       now: () => readyDay,
       deliver: async (request, lease) => {
@@ -297,6 +403,27 @@ async function main() {
     });
     assert.equal(preview.status, 200);
     assert.match(await preview.text(), /Retention and cleanup/);
+    const todayDraft = await db.issue.findUniqueOrThrow({
+      where: { editionDate: editionDateForNow() },
+    });
+    const manualRequest = (authorized: boolean) =>
+      fetch(`${base}/api/admin/operations`, {
+        method: "POST",
+        redirect: "manual",
+        headers: { origin: admin.SITE_URL, ...(authorized ? { cookie } : {}) },
+        body: new URLSearchParams({ mode: "prepare" }),
+      });
+    assert.equal((await manualRequest(false)).status, 401);
+    const openedDraft = await manualRequest(true);
+    assert.equal(openedDraft.status, 303);
+    const openedUrl = new URL(openedDraft.headers.get("location")!);
+    assert.equal(openedUrl.pathname, `/admin/issues/${todayDraft.id}`);
+    assert.equal(openedUrl.searchParams.get("notice"), "draft_already_ready");
+    assert.deepEqual(
+      (await db.issue.findUniqueOrThrow({ where: { id: todayDraft.id } }))
+        .content,
+      todayDraft.content,
+    );
     assert.ok(await db.subscriber.findUnique({ where: { id: expired.id } }));
     assert.equal(
       (await fetch(`${base}/api/pipeline/cleanup`, { method: "POST" })).status,
