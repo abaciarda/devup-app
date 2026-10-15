@@ -6,7 +6,8 @@ import {
   type IssueContent,
 } from "../../../types/issue-content";
 import { editionDateKey } from "../../edition-date";
-import { evidenceSchema, modelSourceText } from "./draft-content";
+import { evidenceSchema, looksTurkish, modelSourceText } from "./draft-content";
+import { inPublicationWindow } from "../operations/schedule";
 import {
   acquirePipelineLease,
   commitUnderPipelineLease,
@@ -27,6 +28,8 @@ export const publicationErrorSchema = z.enum([
   "source_disabled",
   "invalid_evidence",
   "future_edition",
+  "automatic_window_closed",
+  "automatic_edition_mismatch",
 ]);
 
 export type PublicationErrorCode = z.infer<typeof publicationErrorSchema>;
@@ -73,13 +76,14 @@ export type PublicationResult =
       editionKey: string;
     };
 
-export async function publishDraftInTransaction(
+async function publishValidatedDraft(
   tx: Prisma.TransactionClient,
-  input: PublicationApproval,
-  now: Date = new Date(),
+  approval: { issueId: number; reviewVersion?: string; automatic: boolean },
+  now: Date,
 ): Promise<Exclude<PublicationResult, { status: "busy" }>> {
-  const approval = publicationApprovalSchema.parse(input);
   z.date().parse(now);
+  if (approval.automatic && !inPublicationWindow(now))
+    throw new PublicationError("automatic_window_closed");
   await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended('devup:edition-number', 0))`;
   const issue = await tx.issue.findUnique({
     where: { id: approval.issueId },
@@ -87,6 +91,8 @@ export async function publishDraftInTransaction(
   });
   if (!issue) throw new PublicationError("issue_not_found");
   const key = issue.editionDate.toISOString().slice(0, 10);
+  if (approval.automatic && key !== editionDateKey(now))
+    throw new PublicationError("automatic_edition_mismatch");
   if (issue.publishedAt)
     return { status: "already_published", issueId: issue.id, editionKey: key };
   if (issue.deliveryStartedAt || issue.deliveryFinishedAt)
@@ -98,6 +104,17 @@ export async function publishDraftInTransaction(
   if (!parsed.success) throw new PublicationError("invalid_content");
   const content = parsed.data;
   if (
+    approval.automatic &&
+    (issue.generationError ||
+      content.tr.title.length > 80 ||
+      content.en.title.length > 80 ||
+      content.tr.news.some(
+        (story) => !looksTurkish(`${story.title} ${story.summary}`),
+      ))
+  )
+    throw new PublicationError("invalid_content");
+  if (
+    approval.reviewVersion !== undefined &&
     !constantTimeEqual(
       approval.reviewVersion,
       issueReviewVersion(content, issue.updatedAt),
@@ -178,6 +195,24 @@ export async function publishDraftInTransaction(
   });
   if (changed.count !== 1) throw new PublicationError("review_changed");
   return { status: "published", issueId: issue.id, editionKey: key };
+}
+
+export async function publishDraftInTransaction(
+  tx: Prisma.TransactionClient,
+  input: PublicationApproval,
+  now: Date = new Date(),
+): Promise<Exclude<PublicationResult, { status: "busy" }>> {
+  const approval = publicationApprovalSchema.parse(input);
+  return publishValidatedDraft(tx, { ...approval, automatic: false }, now);
+}
+
+export async function publishAutomaticDraftInTransaction(
+  tx: Prisma.TransactionClient,
+  issueId: number,
+  now: Date = new Date(),
+): Promise<Exclude<PublicationResult, { status: "busy" }>> {
+  z.number().int().positive().max(2_147_483_647).parse(issueId);
+  return publishValidatedDraft(tx, { issueId, automatic: true }, now);
 }
 
 export async function publishReviewedIssue(

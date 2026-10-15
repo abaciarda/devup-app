@@ -48,7 +48,7 @@ const notices: Record<MutationNotice, string> = {
   draft_preview_disabled:
     "Draft preparation is disabled on preview deployments. Use your local or production workspace.",
   operations_status:
-    "Operational request finished or was skipped. Check the launch settings and edition state; scheduled preparation never publishes automatically.",
+    "Operational request finished or was skipped. Check the launch settings and edition state. Automatic publication follows the configured morning schedule when enabled.",
   delivery_provider_backoff:
     "Resend requested a pause. All confirmation and issue submissions are paused until the shared provider cooldown expires.",
   delivery_complete:
@@ -89,6 +89,10 @@ const notices: Record<MutationNotice, string> = {
   invalid_evidence:
     "Saved source evidence failed validation. Regenerate and review the draft.",
   future_edition: "Future editions cannot publish yet.",
+  automatic_window_closed:
+    "Automatic publication runs only from 07:00 to 11:00 in Europe/Istanbul.",
+  automatic_edition_mismatch:
+    "Automatic publication only processes today's edition. Older drafts require manual review.",
   operation_failed:
     "The operation failed. Check database access and retry after review.",
 };

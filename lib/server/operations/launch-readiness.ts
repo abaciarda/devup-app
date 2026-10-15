@@ -31,6 +31,7 @@ export function launchReadiness() {
     publicReviewApproved: process.env.PUBLIC_LAUNCH_APPROVED === "true",
     cleanupEnabled: process.env.CLEANUP_ENABLED === "true",
     pipelineEnabled: process.env.PIPELINE_ENABLED === "true",
+    autoPublishEnabled: process.env.AUTO_PUBLISH_ENABLED === "true",
     deliveryEnabled: process.env.EMAIL_DELIVERY_ENABLED === "true",
     productionDeployment:
       process.env.NODE_ENV === "production" && !isPreviewDeployment(),

@@ -11,11 +11,22 @@ import { runPipeline } from "../lib/server/operations/pipeline";
 import { prepareManualDraft } from "../lib/server/operations/manual-preparation";
 import {
   acquirePipelineLease,
+  commitUnderPipelineLease,
   releasePipelineLease,
 } from "../lib/server/operations/lease";
 import { createAdminSession } from "../lib/server/admin/session";
 import { editionDateForNow } from "../lib/edition-date";
 import { emailFixture } from "./email-fixture";
+import { draftFixture } from "./draft-fixture";
+import { validateModelDraft } from "../lib/server/issues/draft-content";
+import { saveReadyDraft } from "../lib/server/issues/draft-storage";
+import {
+  PublicationError,
+  publishAutomaticDraftInTransaction,
+} from "../lib/server/issues/publication";
+import { saveDeliverySnapshot } from "../lib/server/delivery/snapshot";
+
+let stage = "database setup";
 
 async function main() {
   const schema = `task12_${randomUUID().replaceAll("-", "")}`;
@@ -56,10 +67,12 @@ async function main() {
       ],
       options,
     );
+    stage = "existing operations checks";
     db = getDb();
     const secret = randomBytes(32).toString("base64url");
     process.env.CRON_SECRET = secret;
     process.env.PIPELINE_ENABLED = "true";
+    process.env.AUTO_PUBLISH_ENABLED = "false";
     process.env.CLEANUP_ENABLED = "true";
     const fixture = emailFixture();
     const morning = new Date("2099-12-13T04:17:00Z");
@@ -293,6 +306,228 @@ async function main() {
       ).state,
       "delivery_pending",
     );
+    await db.issue.update({
+      where: { id: freshIssue.id },
+      data: { deliveryFinishedAt: readyDay },
+    });
+    process.env.AUTO_PUBLISH_ENABLED = "true";
+    process.env.PUBLIC_LAUNCH_APPROVED = "true";
+    process.env.EMAIL_DELIVERY_ENABLED = "true";
+    Object.assign(process.env, fixture.settings);
+    process.env.SUBSCRIBER_LINK_SECRET = randomBytes(32).toString("base64url");
+    process.env.CONSENT_VERSION = "fixture";
+    stage = "automatic publication fixtures";
+    const autoMorning = new Date("2099-12-15T04:00:00Z");
+    const autoSource = await db.source.create({
+      data: { key: "hackernews", enabled: true },
+    });
+    const autoIssue = await db.issue.create({
+      data: { editionDate: editionDateForNow(autoMorning) },
+    });
+    const autoIds: number[] = [];
+    const baseDraft = draftFixture(autoMorning);
+    for (const candidate of baseDraft.pool) {
+      const row = await db.rawItem.create({
+        data: {
+          sourceId: autoSource.id,
+          externalId: randomUUID(),
+          title: candidate.title,
+          originalUrl: candidate.originalUrl,
+          normalizedUrl: candidate.normalizedUrl,
+          excerpt: candidate.sourceText,
+          publishedAt: autoMorning,
+          fetchedAt: autoMorning,
+          tags: candidate.tags,
+        },
+      });
+      autoIds.push(row.id);
+    }
+    const autoDraft = draftFixture(autoMorning, autoIds);
+    for (const candidate of autoDraft.pool)
+      await db.rawItem.update({
+        where: { id: candidate.rawItemId },
+        data: {
+          originalUrl: candidate.originalUrl,
+          normalizedUrl: candidate.normalizedUrl,
+        },
+      });
+    await db.$transaction((tx) =>
+      saveReadyDraft(
+        tx,
+        autoIssue.id,
+        {
+          draft: validateModelDraft(autoDraft.output, autoDraft.pool),
+          model: "fixture-model",
+          attempts: [],
+        },
+        autoDraft.pool,
+        autoMorning,
+      ),
+    );
+    stage = "automatic publication guards";
+    assert.equal(
+      (
+        await runPipeline("delivery", {
+          now: () => new Date("2099-12-15T03:59:59Z"),
+          deliver: async () => {
+            throw new Error("Automatic delivery must not start before 07:00");
+          },
+        })
+      ).state,
+      "outside_window",
+    );
+    const refused = (code: string) => (error: unknown) =>
+      error instanceof PublicationError && error.code === code;
+    const rejectAutoPublication = (time: Date, code: string) =>
+      assert.rejects(
+        db!.$transaction((tx) =>
+          publishAutomaticDraftInTransaction(tx, autoIssue.id, time),
+        ),
+        refused(code),
+      );
+    await rejectAutoPublication(
+      new Date("2099-12-15T03:59:59Z"),
+      "automatic_window_closed",
+    );
+    await rejectAutoPublication(
+      new Date("2099-12-15T08:00:00Z"),
+      "automatic_window_closed",
+    );
+    await rejectAutoPublication(
+      new Date("2099-12-16T04:00:00Z"),
+      "automatic_edition_mismatch",
+    );
+    await db.source.update({
+      where: { id: autoSource.id },
+      data: { enabled: false },
+    });
+    await rejectAutoPublication(autoMorning, "source_disabled");
+    await db.source.update({
+      where: { id: autoSource.id },
+      data: { enabled: true },
+    });
+    await db.rawItem.update({
+      where: { id: autoIds[0] },
+      data: { excerpt: "Missing source evidence." },
+    });
+    await rejectAutoPublication(autoMorning, "invalid_evidence");
+    await db.rawItem.update({
+      where: { id: autoIds[0] },
+      data: { excerpt: autoDraft.pool[0].sourceText },
+    });
+    await db.issue.update({
+      where: { id: autoIssue.id },
+      data: { generationError: "failed_regeneration" },
+    });
+    await rejectAutoPublication(autoMorning, "invalid_content");
+    await db.issue.update({
+      where: { id: autoIssue.id },
+      data: { generationError: null },
+    });
+    assert.equal(
+      (
+        await runPipeline("prepare", {
+          now: () => new Date("2099-12-15T03:30:00Z"),
+          refresh: async () => {
+            throw new Error("Prepared editions must not be generated again");
+          },
+        })
+      ).state,
+      "prepared",
+    );
+    stage = "automatic delivery queue";
+    const queuedDelivery: typeof import("../lib/server/delivery/send").runDelivery =
+      async (request, lease) => {
+        assert.deepEqual(request, { mode: "issue", issueId: autoIssue.id });
+        assert.ok(lease);
+        const sendId = randomUUID();
+        await commitUnderPipelineLease(lease, (tx) =>
+          saveDeliverySnapshot(tx, autoIssue.id, new Date(), [
+            {
+              id: sendId,
+              subscriberId: reviewSubscriber.id,
+              subscriptionVersion: 1,
+              language: "en",
+              message: {
+                idempotencyKey: `issue/${sendId}`,
+                payload: {
+                  from: fixture.settings.EMAIL_FROM,
+                  to: [reviewSubscriber.email],
+                  reply_to: fixture.settings.EMAIL_REPLY_TO,
+                  subject: "Automatic edition fixture",
+                  html: "<p>Automatic edition fixture</p>",
+                  text: "Automatic edition fixture",
+                  tags: [
+                    { name: "send_id", value: sendId },
+                    { name: "kind", value: "issue" },
+                  ],
+                },
+              },
+            },
+          ]),
+        );
+        return { state: "progress", attempted: 0 };
+      };
+    let cacheRefreshes = 0;
+    const autoDependencies = {
+      now: () => autoMorning,
+      deliver: queuedDelivery,
+      refreshCache: (key: string) => {
+        assert.equal(key, "2099-12-15");
+        cacheRefreshes += 1;
+      },
+    };
+    process.env.PUBLIC_LAUNCH_APPROVED = "false";
+    assert.equal(
+      (await runPipeline("delivery", autoDependencies)).state,
+      "needs_review",
+    );
+    process.env.PUBLIC_LAUNCH_APPROVED = "true";
+    const failedCache = await runPipeline("delivery", {
+      ...autoDependencies,
+      refreshCache: () => {
+        throw new Error("Simulated cache refresh failure");
+      },
+      deliver: async () => {
+        throw new Error("Delivery must wait for cache refresh");
+      },
+    });
+    assert.equal(failedCache.state, "cache_refresh_pending");
+    assert.equal(
+      await db.sendLog.count({ where: { issueId: autoIssue.id } }),
+      0,
+    );
+    await runPipeline("delivery", autoDependencies);
+    const autoPublished = await db.issue.findUniqueOrThrow({
+      where: { id: autoIssue.id },
+    });
+    assert.equal(
+      autoPublished.publishedAt?.toISOString(),
+      autoMorning.toISOString(),
+    );
+    assert.equal(
+      await db.sendLog.count({ where: { issueId: autoIssue.id } }),
+      1,
+    );
+    await runPipeline("delivery", autoDependencies);
+    assert.equal(
+      await db.sendLog.count({ where: { issueId: autoIssue.id } }),
+      1,
+    );
+    assert.equal(
+      (await db.issue.findUniqueOrThrow({ where: { id: autoIssue.id } }))
+        .editionNumber,
+      autoPublished.editionNumber,
+    );
+    assert.equal(cacheRefreshes, 2);
+    process.env.VERCEL_ENV = "preview";
+    assert.equal(
+      (await runPipeline("delivery", autoDependencies)).state,
+      "disabled",
+    );
+    delete process.env.VERCEL_ENV;
+    process.env.AUTO_PUBLISH_ENABLED = "false";
+    stage = "HTTP checks";
     const admin = {
       SITE_URL: "https://devup.example",
       SESSION_SECRET: randomBytes(32).toString("base64url"),
@@ -337,6 +572,7 @@ async function main() {
           NODE_ENV: "production",
           DEVUP_OPERATIONS_FIXTURE: "enabled",
           EMAIL_DELIVERY_ENABLED: "false",
+          AUTO_PUBLISH_ENABLED: "false",
           SUBSCRIPTIONS_ENABLED: "false",
           PUBLIC_LAUNCH_APPROVED: "false",
           GEMINI_API_KEY: "",
@@ -446,7 +682,7 @@ async function main() {
       { fixture: true },
     );
     console.log(
-      "Production migrations deployed twice with no schema drift; isolated orchestration cap/approval/backlog handling, cron auth, GET rejection, lease overlap, read-only admin preview and cleanup HTTP passed; no external HTTP calls",
+      "Production migrations deployed twice with no schema drift; isolated morning timing, automatic validation/publication, cache recovery, queue idempotency, preview/launch guards, manual approval, cron auth and cleanup HTTP checks passed; no external provider calls",
     );
   } finally {
     if (server) {
@@ -465,9 +701,12 @@ async function main() {
 }
 main().catch((error) => {
   if (error instanceof assert.AssertionError) console.error(error);
-  else
-    console.error(
-      "Isolated operations check failed; verify migration chain, schema permissions and unused port 3414",
-    );
+  else {
+    let detail = error instanceof Error ? error.message : "Unknown error";
+    for (const [key, value] of Object.entries(process.env))
+      if (/(SECRET|KEY|PASSWORD|DATABASE_URL)/.test(key) && value)
+        detail = detail.replaceAll(value, "[redacted]");
+    console.error(`Isolated operations check failed at ${stage}: ${detail}`);
+  }
   process.exitCode = 1;
 });

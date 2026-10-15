@@ -51,6 +51,8 @@ export async function runScheduled(
         "published",
         "delivery_pending",
         "waiting_for_approval",
+        "prepared",
+        "cache_refresh_pending",
         "needs_review",
         "progress",
         "retry_scheduled",
@@ -68,6 +70,7 @@ export async function runScheduled(
       result.state === "busy" ||
       result.state === "needs_review" ||
       result.state === "disabled" ||
+      result.state === "cache_refresh_pending" ||
       result.limited === true
     )
       throw new Error(`Scheduled work requires attention: ${result.state}`);

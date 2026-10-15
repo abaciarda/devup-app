@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import { inPreparationWindow } from "../lib/server/operations/pipeline";
+import { inPublicationWindow } from "../lib/server/operations/schedule";
 import { operationsEnvSchema } from "../lib/server/operations/env";
 import { authorizeScheduledRequest } from "../lib/server/operations/http";
 import { subscriptionEnv } from "../lib/server/subscriptions/env";
@@ -11,14 +12,26 @@ async function main() {
   const secret = randomBytes(32).toString("base64url");
   const defaults = operationsEnvSchema.parse({ CRON_SECRET: secret });
   assert.equal(defaults.PIPELINE_ENABLED, "false");
+  assert.equal(defaults.AUTO_PUBLISH_ENABLED, "false");
   assert.equal(defaults.CLEANUP_ENABLED, "false");
   for (const [time, expected] of [
-    ["2026-10-14T03:59:00Z", false],
+    ["2026-10-14T03:29:59Z", false],
+    ["2026-10-14T03:30:00Z", true],
+    ["2026-10-14T03:59:00Z", true],
     ["2026-10-14T04:00:00Z", true],
     ["2026-10-14T07:59:00Z", true],
     ["2026-10-14T08:00:00Z", false],
   ] as const)
     assert.equal(inPreparationWindow(new Date(time)), expected);
+  for (const [time, expected] of [
+    ["2026-10-14T03:59:59Z", false],
+    ["2026-10-14T04:00:00Z", true],
+    ["2026-10-14T07:59:59Z", true],
+    ["2026-10-14T08:00:00Z", false],
+    ["2026-10-14T21:30:00Z", false],
+    ["2027-06-01T04:00:00Z", true],
+  ] as const)
+    assert.equal(inPublicationWindow(new Date(time)), expected);
   process.env.CRON_SECRET = secret;
   assert.equal(
     authorizeScheduledRequest(new Request("https://devup.example"))?.status,
@@ -71,6 +84,21 @@ async function main() {
     { state: "waiting_for_approval" },
   );
   assert.equal(seen.length, 2);
+  assert.deepEqual(
+    await runScheduled("prepare", {
+      siteUrl: "https://devup.example",
+      secret,
+      transport: async () => Response.json({ state: "prepared" }),
+    }),
+    { state: "prepared" },
+  );
+  await assert.rejects(
+    runScheduled("delivery", {
+      siteUrl: "https://devup.example",
+      secret,
+      transport: async () => Response.json({ state: "cache_refresh_pending" }),
+    }),
+  );
   await assert.rejects(
     runScheduled("prepare", {
       siteUrl: "http://devup.example",

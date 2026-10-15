@@ -1,9 +1,5 @@
 import "server-only";
-import {
-  editionDateForNow,
-  editionDateKey,
-  editionTimeZone,
-} from "../../edition-date";
+import { editionDateForNow, editionDateKey } from "../../edition-date";
 import { getDb } from "../database/client";
 import { operationsEnv, isPreviewDeployment } from "./env";
 import {
@@ -14,17 +10,11 @@ import {
 import { refreshSources } from "../sources/refresh";
 import { generateIssue } from "../issues/generate";
 import { runDelivery } from "../delivery/send";
+import { refreshPublishedIssueCache } from "../issues/cache";
+import { publishMorningEdition } from "./automatic-publication";
+import { inPreparationWindow, publicationTimeReached } from "./schedule";
 
-export function inPreparationWindow(now: Date) {
-  const hour = Number(
-    new Intl.DateTimeFormat("en-GB", {
-      timeZone: editionTimeZone,
-      hour: "2-digit",
-      hourCycle: "h23",
-    }).format(now),
-  );
-  return hour >= 7 && hour < 11;
-}
+export { inPreparationWindow } from "./schedule";
 export async function runPipeline(
   mode: "prepare" | "delivery" | "confirmations",
   dependencies: {
@@ -32,6 +22,7 @@ export async function runPipeline(
     refresh?: typeof refreshSources;
     generate?: typeof generateIssue;
     deliver?: typeof runDelivery;
+    refreshCache?: typeof refreshPublishedIssueCache;
   } = {},
 ) {
   const env = operationsEnv();
@@ -47,6 +38,14 @@ export async function runPipeline(
         lease,
       );
     if (mode === "delivery") {
+      if (env.AUTO_PUBLISH_ENABLED === "true" && !publicationTimeReached(now))
+        return { state: "outside_window" };
+      const publication = await publishMorningEdition(
+        lease,
+        now,
+        dependencies.refreshCache,
+      );
+      if (publication) return publication;
       await commitUnderPipelineLease(lease, (tx) =>
         tx.issue.updateMany({
           where: {
@@ -129,7 +128,13 @@ export async function runPipeline(
     if (issue.publishedAt || issue.deliveryStartedAt)
       return { state: "published", issueId: issue.id };
     if (issue.generationStatus === "ready")
-      return { state: "waiting_for_approval", issueId: issue.id };
+      return {
+        state:
+          env.AUTO_PUBLISH_ENABLED === "true"
+            ? "prepared"
+            : "waiting_for_approval",
+        issueId: issue.id,
+      };
     if (issue.scheduledGenerationAttempts >= 1)
       return { state: "needs_review", issueId: issue.id };
     const reserved = await commitUnderPipelineLease(lease, (tx) =>
@@ -161,7 +166,9 @@ export async function runPipeline(
     return {
       state:
         result.status === "ready"
-          ? "waiting_for_approval"
+          ? env.AUTO_PUBLISH_ENABLED === "true"
+            ? "prepared"
+            : "waiting_for_approval"
           : result.status === "busy"
             ? "busy"
             : "needs_review",

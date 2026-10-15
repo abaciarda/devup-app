@@ -8,7 +8,7 @@ import {
   PublicationError,
   publishReviewedIssue,
 } from "@/lib/server/issues/publication";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { refreshPublishedIssueCache } from "@/lib/server/issues/cache";
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 
@@ -45,11 +45,7 @@ export async function POST(request: NextRequest) {
     });
     if (result.status === "busy") return mutationRedirect(issueId, "busy");
     try {
-      revalidateTag("issues", { expire: 0 });
-      revalidatePath("/");
-      revalidatePath("/archive");
-      revalidatePath(`/digest/${result.editionKey}`);
-      revalidatePath("/sitemap.xml");
+      refreshPublishedIssueCache(result.editionKey);
     } catch {
       return mutationRedirect(issueId, "cache_refresh_pending");
     }

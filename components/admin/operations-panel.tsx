@@ -16,6 +16,7 @@ const checkNames: Record<string, string> = {
   publicReviewApproved: "Launch approval",
   cleanupEnabled: "Data cleanup",
   pipelineEnabled: "Daily preparation",
+  autoPublishEnabled: "Automatic publication",
   deliveryEnabled: "Email sending",
   productionDeployment: "Production deployment",
 };
@@ -73,17 +74,21 @@ export default async function OperationsPanel() {
             ? `Last completed cleanup: ${formatAdminDate(cleanup.finishedAt)}.`
             : "No completed cleanup yet."}{" "}
           Manual preparation works at any time: it fetches news and creates
-          today&apos;s private draft, or opens it if already ready. Nothing is
-          published or emailed. Cleanup previews never delete data.
+          today&apos;s private draft, or opens it if already ready. The manual
+          button does not publish or email. When automatic publication is
+          enabled, the scheduler can publish a validated draft from 07:00.
+          Cleanup previews never delete data.
         </p>
         <details className="admin-details">
           <summary>About these checks</summary>
           <p className="admin-help">
             Configuration checks do not prove inbox delivery or deployment
             readiness. Public launch still requires the operator checklist.
-            Automated preparation runs from 07:00–11:00, Europe/Istanbul; the
-            manual button is independent of that schedule. Cleanup must be
-            explicitly enabled before it can delete or redact eligible data.
+            Automated preparation runs from 06:30–11:00, Europe/Istanbul.
+            Automatic publication starts at 07:00 and stops at 11:00; drafts
+            that fail validation stay private for review. The manual button is
+            independent of that schedule. Cleanup must be explicitly enabled
+            before it can delete or redact eligible data.
           </p>
         </details>
       </div>
