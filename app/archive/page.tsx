@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
-import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import ArchiveList from "@/components/archive/archive-list";
 import { parseArchiveCursor } from "@/lib/public-issues";
@@ -18,8 +16,9 @@ type Props = {
   }>;
 };
 
-async function PublishedArchive({ searchParams }: Props) {
-  await connection();
+export const instant = false;
+
+export default async function ArchivePage({ searchParams }: Props) {
   const search = await searchParams;
   let cursor: ReturnType<typeof parseArchiveCursor>;
   try {
@@ -28,12 +27,4 @@ async function PublishedArchive({ searchParams }: Props) {
     notFound();
   }
   return <ArchiveList page={await loadArchivePage(cursor)} />;
-}
-
-export default function ArchivePage({ searchParams }: Props) {
-  return (
-    <Suspense fallback={<p className="px-6 py-12">Loading archive…</p>}>
-      <PublishedArchive searchParams={searchParams} />
-    </Suspense>
-  );
 }

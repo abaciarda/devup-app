@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { frozenEmailSchema } from "../lib/email/contracts";
+import { emailSubject, frozenEmailSchema } from "../lib/email/contracts";
 import {
   renderConfirmationEmail,
   renderDigestEmail,
@@ -11,8 +11,24 @@ import {
   siteLink,
 } from "../lib/email/settings";
 import { emailFixture } from "./email-fixture";
+import { splitEditionStories } from "../types/issue-content";
 
 const fixture = emailFixture();
+assert.equal(
+  emailSubject("devup #2 · Go 1.27 ve ajan altyapısı"),
+  "devup #2 · Go 1.27 ve ajan altyapısı",
+);
+assert.equal(emailSubject("a".repeat(100)), "a".repeat(100));
+const longSubject = emailSubject(
+  "devup #2 · Pg_vectorsearch ile Hızlı Vektör Aramaları, Go 1.27'de HTTP/1 Bağlantı Yeniden Kullanımı ve Ajanlar İçin Altyapı Yönetimi",
+);
+assert.ok(longSubject.length <= 100);
+assert.ok(longSubject.endsWith("…"));
+assert.equal(
+  emailSubject(`${"a".repeat(95)} trailingword`),
+  `${"a".repeat(95)}…`,
+);
+assert.equal(emailSubject("devup\r\n#2"), "devup #2");
 assert.equal(
   emailAddressSchema.parse(" Reader+tag@Example.COM "),
   "reader+tag@example.com",
@@ -141,8 +157,16 @@ for (const language of ["en", "tr"] as const) {
       payload: { ...digest.payload, to: [fixture.email, "other@example.com"] },
     }),
   );
+  const { main } = splitEditionStories(
+    fixture.issue.content[language].news,
+    fixture.issue.content.featuredRawItemIds,
+    fixture.issue.content.mainStoryCount,
+  );
   for (const story of fixture.issue.content[language].news) {
-    assert.ok(digest.payload.text.includes(story.title));
+    assert.equal(
+      digest.payload.text.split(story.title).length - 1,
+      main.some((item) => item.rawItemId === story.rawItemId) ? 2 : 1,
+    );
     assert.ok(digest.payload.text.includes(story.url));
   }
   await assert.rejects(() =>

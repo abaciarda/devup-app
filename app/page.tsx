@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
-import { connection } from "next/server";
 import Hero from "@/components/home/hero";
 import TodaySection from "@/components/home/today-section";
 import ArchiveSection from "@/components/home/archive-section";
@@ -14,25 +12,16 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
 
-async function PublishedSections() {
-  await connection();
-  const issues = await loadHomeIssues();
-  return (
-    <>
-      <TodaySection issue={issues.latest} />
-      <ArchiveSection issues={issues.previous} />
-    </>
-  );
-}
+export const instant = false;
 
-export default function Home() {
+export default async function Home() {
+  const issues = await loadHomeIssues();
   return (
     <main id="main">
       <HomeDocumentMetadata />
       <Hero />
-      <Suspense fallback={<p className="px-6 py-12">Loading editions…</p>}>
-        <PublishedSections />
-      </Suspense>
+      <TodaySection issue={issues.latest} />
+      <ArchiveSection issues={issues.previous} />
     </main>
   );
 }

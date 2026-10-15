@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import LocalizedApplication from "@/components/i18n/localized-application";
 import { site, siteUrl } from "@/lib/site";
+import { getRequestLanguages } from "@/lib/request-language";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -24,17 +24,20 @@ export const metadata: Metadata = {
   robots: { index: Boolean(siteUrl), follow: true },
 };
 
-export default function RootLayout({
+export const instant = false;
+
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const languages = await getRequestLanguages();
   return (
-    <html lang="en">
+    <html lang={languages.language}>
       <body>
-        <Suspense fallback={null}>
-          <LocalizedApplication>{children}</LocalizedApplication>
-        </Suspense>
+        <LocalizedApplication languages={languages}>
+          {children}
+        </LocalizedApplication>
       </body>
     </html>
   );

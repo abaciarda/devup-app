@@ -13,13 +13,13 @@ const copy = {
     edition: "Edition",
     web: "Read on the website",
     contents: "In this edition",
+    briefCount: (count: number) =>
+      `and ${count} brief ${count === 1 ? "update" : "updates"}`,
     main: "Main stories",
     briefs: "Brief updates",
     discussion: "discussion",
     preferences: "Email language",
     unsubscribe: "Unsubscribe",
-    briefCount: (count: number) =>
-      `and ${count} brief ${count === 1 ? "update" : "updates"}`,
     reason:
       "You receive this email because you confirmed your devup subscription.",
   },
@@ -27,12 +27,12 @@ const copy = {
     edition: "Sayı",
     web: "Web sitesinde oku",
     contents: "Bu sayıda",
+    briefCount: (count: number) => `ve ${count} kısa haber`,
     main: "Ana haberler",
     briefs: "Kısa haberler",
     discussion: "yorumları",
     preferences: "E-posta dili",
     unsubscribe: "Abonelikten çık",
-    briefCount: (count: number) => `ve ${count} kısa haber`,
     reason: "Bu e-postayı devup aboneliğinizi onayladığınız için alıyorsunuz.",
   },
 } as const;
@@ -168,78 +168,59 @@ export default function DigestEmail({
           fontWeight: 600,
           lineHeight: "39px",
           letterSpacing: "-0.374px",
-          margin: "32px 0 16px",
+          margin: "32px 0 32px",
           overflowWrap: "anywhere",
         }}
       >
         {edition.title}
       </Heading>
-      <Text
+      <Hr style={{ ...rule, margin: "0 0 28px" }} />
+      <Section
         style={{
-          color: emailColors.muted,
-          fontSize: "17px",
-          lineHeight: "26px",
-          letterSpacing: "-0.374px",
-          margin: "0 0 26px",
+          borderLeft: `2px solid ${emailColors.line}`,
+          paddingLeft: "20px",
+          margin: "0 0 36px",
         }}
       >
-        {edition.intro}
-      </Text>
-      <Section style={{ margin: "0 0 36px" }}>
-        <table
-          role="presentation"
-          cellPadding="0"
-          cellSpacing="0"
+        <Text
           style={{
-            width: "100%",
-            backgroundColor: emailColors.white,
+            color: emailColors.ink,
+            fontSize: "13px",
+            fontWeight: 600,
+            lineHeight: "22px",
+            margin: "0 0 10px",
           }}
         >
-          <tbody>
-            <tr>
-              <td style={{ padding: "0 0 8px" }}>
-                <Text
-                  style={{
-                    color: emailColors.ink,
-                    fontSize: "13px",
-                    fontWeight: 700,
-                    letterSpacing: "0.2px",
-                    margin: "0 0 12px",
-                  }}
-                >
-                  {labels.contents}
-                </Text>
-                <ul style={{ paddingLeft: "18px", margin: 0 }}>
-                  {main.map((story) => (
-                    <li
-                      key={story.rawItemId}
-                      style={{
-                        color: emailColors.ink,
-                        fontSize: "14px",
-                        lineHeight: "23px",
-                        margin: "6px 0",
-                      }}
-                    >
-                      {story.title}
-                    </li>
-                  ))}
-                </ul>
-                {briefs.length > 0 && (
-                  <Text
-                    style={{
-                      color: emailColors.muted,
-                      fontSize: "13px",
-                      lineHeight: "21px",
-                      margin: "10px 0 0",
-                    }}
-                  >
-                    {labels.briefCount(briefs.length)}
-                  </Text>
-                )}
-              </td>
-            </tr>
-          </tbody>
-        </table>
+          {labels.contents}
+        </Text>
+        <ul style={{ margin: 0, paddingLeft: "20px" }}>
+          {main.map((story) => (
+            <li
+              key={story.rawItemId}
+              style={{
+                color: emailColors.ink,
+                fontSize: "14px",
+                lineHeight: "25px",
+                margin: "0 0 6px",
+                overflowWrap: "anywhere",
+              }}
+            >
+              {story.title}
+            </li>
+          ))}
+        </ul>
+        {briefs.length > 0 && (
+          <Text
+            style={{
+              color: emailColors.muted,
+              fontSize: "13px",
+              lineHeight: "22px",
+              margin: "10px 0 0",
+            }}
+          >
+            {labels.briefCount(briefs.length)}
+          </Text>
+        )}
       </Section>
       <Section>
         <Heading as="h2" style={sectionHeading}>
@@ -310,7 +291,11 @@ export default function DigestEmail({
                   overflowWrap: "anywhere",
                 }}
               >
-                <strong>{story.title}</strong> {story.summary}
+                <strong>
+                  {story.title}
+                  {/[.!?…][”"’')\]]?$/u.test(story.title) ? "" : "."}
+                </strong>{" "}
+                {story.summary}
               </Text>
               <StorySources story={story} language={language} />
             </Section>

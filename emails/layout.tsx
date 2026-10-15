@@ -169,8 +169,8 @@ export default function EmailLayout({
                     }}
                   >
                     {language === "tr"
-                      ? "Teknoloji, yazılım ve yapay zekâ. Kaynaklarıyla."
-                      : "Technology, software and AI. With the sources."}
+                      ? "Yazılımcılar için günlük teknoloji özeti."
+                      : "A daily tech briefing for developers."}
                   </Text>
                   {footer}
                   <Text

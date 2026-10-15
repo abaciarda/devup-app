@@ -42,8 +42,11 @@ export type EmailPayload = z.infer<typeof emailPayloadSchema>;
 export type FrozenEmail = z.infer<typeof frozenEmailSchema>;
 
 export function emailSubject(value: string): string {
-  return value
+  const subject = value
     .replace(/[\u0000-\u001f\u007f]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+  if (subject.length <= 100) return subject;
+  const shortened = subject.slice(0, 99).replace(/\s+\S*$/u, "");
+  return `${shortened.trimEnd()}…`;
 }

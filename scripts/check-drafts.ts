@@ -26,6 +26,11 @@ const json = (value: unknown) =>
 const validated = validateModelDraft(fixture.output, fixture.pool);
 assert.equal(validated?.content.tr.news.length, 10);
 assert.equal(validated?.content.mainStoryCount, 6);
+for (const language of ["tr", "en"] as const) {
+  const oversizedTitle = structuredClone(fixture.output);
+  oversizedTitle[language].title = "x".repeat(81);
+  assert.throws(() => validateModelDraft(oversizedTitle, fixture.pool));
+}
 const prompt = buildDraftPrompt(fixture.pool, "2099-04-01", [
   "Earlier headline about a database release",
 ]);

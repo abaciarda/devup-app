@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useLanguage } from "@/components/i18n/language";
 import { publicCopy, storyForCard } from "@/lib/public-issues";
 import type { PublicIssue } from "@/types/public-issue";
-import StoryCard from "./story-card";
+import StoryRow from "./story-row";
 
 export default function EditionContent({ issue }: { issue: PublicIssue }) {
   const language = useLanguage();
@@ -18,19 +18,17 @@ export default function EditionContent({ issue }: { issue: PublicIssue }) {
       <p className="text-[11px] font-semibold tracking-[1.6px] text-muted uppercase">
         {copy.issue} #{issue.editionNumber} · {issue.date}
       </p>
-      <h1 className="mt-4 max-w-[850px] text-[38px] font-semibold leading-tight tracking-[-1.5px] sm:text-[56px]">
+      <h1 className="mt-4 max-w-[850px] text-[30px] font-semibold leading-[1.2] tracking-[-.8px] sm:text-[40px]">
         {edition.title}
       </h1>
       <p className="mt-5 max-w-[760px] text-lg text-muted">{edition.intro}</p>
-      <div className="mt-10 grid gap-6 md:grid-cols-3">
+      <ol className="mt-10 max-w-[960px] divide-y divide-line border-y border-line">
         {edition.news.map((story, index) => (
-          <StoryCard
-            key={story.rawItemId}
-            story={storyForCard(story, language)}
-            index={index}
-          />
+          <li key={story.rawItemId}>
+            <StoryRow story={storyForCard(story, language)} index={index} />
+          </li>
         ))}
-      </div>
+      </ol>
       <Link
         href="/archive"
         prefetch={false}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useLanguage } from "@/components/i18n/language";
-import StoryCard from "@/components/digest/story-card";
+import StoryRow from "@/components/digest/story-row";
 import { container, eyebrow, link } from "@/components/styles";
 import { featuredStories, publicCopy, storyForCard } from "@/lib/public-issues";
 import type { PublicIssue } from "@/types/public-issue";
@@ -25,7 +25,7 @@ export default function TodaySection({ issue }: { issue: PublicIssue | null }) {
           <p className={eyebrow}>
             {copy.latest} · #{issue.editionNumber}
           </p>
-          <h2 className="mt-4 max-w-[800px] text-[34px] font-semibold leading-tight tracking-[-1.3px] sm:text-[42px]">
+          <h2 className="mt-4 max-w-[820px] text-[28px] font-semibold leading-[1.2] tracking-[-.7px] sm:text-[34px]">
             {edition.title}
           </h2>
         </div>
@@ -38,15 +38,17 @@ export default function TodaySection({ issue }: { issue: PublicIssue | null }) {
       <p className="mt-5 max-w-[760px] text-[17px] text-muted">
         {edition.intro}
       </p>
-      <div className="mt-8 grid gap-6 md:grid-cols-3">
+      <ol className="mt-8 max-w-[960px] divide-y divide-line border-y border-line">
         {featuredStories(issue, language).map((story, index) => (
-          <StoryCard
-            key={story.rawItemId}
-            story={storyForCard(story, language)}
-            index={index}
-          />
+          <li key={story.rawItemId}>
+            <StoryRow
+              story={storyForCard(story, language)}
+              index={index}
+              preview
+            />
+          </li>
         ))}
-      </div>
+      </ol>
       <Link
         href={`/digest/${issue.date}`}
         prefetch={false}

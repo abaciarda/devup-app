@@ -22,7 +22,7 @@ const modelStorySchema = z.strictObject({
 });
 
 const modelEditionSchema = z.strictObject({
-  title: z.string().max(180),
+  title: z.string().trim().max(80),
   intro: z.string().max(600),
   news: z.array(modelStorySchema).max(mainStoryLimit + briefStoryLimit),
 });
@@ -116,14 +116,19 @@ export function buildDraftPrompt(
     "Dev.to is supplementary: choose it only for a concrete development that no other candidate covers. Prefer different publishers.",
     "",
     "WRITING",
-    "The edition title names the two or three most important developments in at most 110 characters, never a generic daily-news heading. The intro is one sentence.",
-    "Each story title is a clear, factual headline of at most 100 characters.",
-    "A main story summary has 3 to 5 sentences, about 350 to 700 characters: what happened, the key specifics, and why it matters to developers.",
+    "The edition title is an inbox-friendly headline: aim for 50 to 70 characters and never exceed 80 characters, including spaces. Name two or three leading topics as short phrases, not full story headlines. Use natural sentence case, not Title Case. Omit secondary technical details and filler. Do not include the newsletter name, edition number or date. Never use a generic daily-news heading. The intro is one sentence.",
+    "Example title style: 'Go 1.27, vector search and agent infrastructure'. Turkish style: 'Go 1.27, vektör arama ve ajan altyapısı'. These examples illustrate style only; use topics supported by the supplied stories.",
+    "Each story title is a clear, factual headline of at most 100 characters in natural sentence case. Name the actual change instead of calling it a major improvement or significant performance boost.",
+    "A main story summary normally has 3 to 5 sentences, about 350 to 700 characters. Explain the concrete change, the affected users or workload, a useful source-supported detail, and the practical consequence when the source establishes it. Do not merely rephrase the headline in two sentences.",
+    "Preserve the details that explain the story: relevant product versions, before-and-after behavior, conditions, and mechanism when supplied. Prefer these details over adjectives or generic statements about helping developers. Do not add a mechanism or practical consequence that the supplied passages do not support.",
+    "For performance claims, preserve the measured workload, comparison baseline and before-and-after values when supplied. Attribute measurements to the source or its example. A speedup in one benchmark is not a general speedup for every user or request. If the supplied text gives only a ratio, qualify it with the available test context; never invent missing measurements or conditions.",
+    "Length is a guide, not a reason to pad: use fewer sentences when the source supports only a short update. Never invent facts, repeat a point, or add generic advice to reach a length target. Prefer stories with enough substantive evidence for the main section; use short updates as briefs when possible.",
     `A brief story summary has 1 or 2 sentences and at most ${briefSummaryLimit - 120} characters.`,
-    "Use a plain, factual, neutral tone. No hype, emojis, exclamation marks or rhetorical questions. Attribute claims and opinions to their source.",
+    "Use a plain, factual, neutral tone. No hype, emojis, exclamation marks or rhetorical questions. Avoid filler such as 'major improvement', 'significant boost', 'önemli performans artışı' or 'büyük bir gelişme'; state what changed and the supporting specifics instead. Attribute claims and opinions to their source.",
     "Write the Turkish edition in natural Turkish, as a Turkish software engineer would write it, in a neutral formal register. Keep product names and established technical terms in English. Every Turkish title and summary must be fully Turkish; never leave an English sentence untranslated.",
     "Keep names, numbers, dates and uncertainty consistent across languages.",
     "Write original concise summaries, not copied articles. Output plain text inside JSON fields.",
+    "Before returning the JSON, review each summary against the supplied passages: keep useful specifics, preserve uncertainty and attribution, remove unsupported explanations and broad performance promises, and check that the Turkish and English versions retain the same factual detail.",
     "",
     "FORMAT",
     "Categories: ai for AI and LLMs; security for vulnerabilities, breaches, privacy and cryptography; software for languages, runtimes, engineering practice and deep-dives; tools for developer tools and products; open_source for project governance, licensing and maintenance; industry for companies, markets, law and regulation.",
