@@ -41,6 +41,8 @@ yarn-error.log*
 next-env.d.ts
 /.windsurf
 /.claude
+/.local-backups/
+/.local-tools/
 /.agents
 !.env.example
 /generated/prisma/
