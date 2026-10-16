@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { renderConfirmationEmail } from "@/lib/email/render";
 import { emailEnv } from "@/lib/server/delivery/sender-env";
+import { runDelivery } from "@/lib/server/delivery/send";
 import { getDb } from "@/lib/server/database/client";
 import { randomToken } from "@/lib/server/shared/security";
 import { subscriptionEnv } from "@/lib/server/subscriptions/env";
@@ -14,6 +15,8 @@ import {
   signupSchema,
   subscribeInTransaction,
 } from "@/lib/server/subscriptions/storage";
+
+export const maxDuration = 60;
 
 export async function POST(request: Request) {
   try {
@@ -45,11 +48,28 @@ export async function POST(request: Request) {
         { sendId, token, email: input.email, language: input.language },
         emailEnv(),
       );
-      await getDb().$transaction(
+      const queued = await getDb().$transaction(
         (tx) =>
           subscribeInTransaction(tx, input, { sendId, token, message }, env),
         { maxWait: 5000, timeout: 10000 },
       );
+      if (queued)
+        after(async () => {
+          try {
+            for (let attempt = 0; attempt < 10; attempt++) {
+              const result = await runDelivery({
+                mode: "confirmations",
+                sendId,
+              });
+              if (result.state !== "busy") return;
+              await new Promise((resolve) => setTimeout(resolve, 1000));
+            }
+          } catch {
+            console.error(
+              "Immediate confirmation attempt failed; queued for retry",
+            );
+          }
+        });
     }
     return subscriptionResponse(
       NextResponse.json({ status: "received" }, { status: 202 }),

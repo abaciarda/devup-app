@@ -25,7 +25,7 @@ export const deliveryRequestSchema = z.discriminatedUnion("mode", [
     mode: z.literal("issue"),
     issueId: z.number().int().positive().max(2_147_483_647),
   }),
-  z.object({ mode: z.literal("confirmations") }),
+  z.object({ mode: z.literal("confirmations"), sendId: z.uuid().optional() }),
   z.object({ mode: z.literal("retry") }),
 ]);
 export type DeliveryRequest = z.infer<typeof deliveryRequestSchema>;
@@ -49,11 +49,16 @@ export async function runDelivery(
       return { state: "provider_backoff" as const, attempted: 0 };
     const db = getDb();
     const now = new Date();
+    const confirmationWhere =
+      request.mode === "confirmations" && request.sendId
+        ? { confirmationSendId: request.sendId }
+        : {};
     const refs: DeliveryRef[] = [];
     if (request.mode !== "issue") {
       const rows = await db.subscriber.findMany({
         where: {
           confirmationSendId: { not: null },
+          ...confirmationWhere,
           confirmationNeedsReview: false,
           OR: [
             { confirmationStatus: "pending" },
@@ -184,16 +189,21 @@ export async function runDelivery(
         ? 0
         : db.subscriber.count({
             where: {
+              ...confirmationWhere,
               confirmationStatus: "pending",
               confirmationNeedsReview: false,
             },
           }),
       request.mode === "issue"
         ? 0
-        : db.subscriber.count({ where: { confirmationRetryable: true } }),
+        : db.subscriber.count({
+            where: { ...confirmationWhere, confirmationRetryable: true },
+          }),
       request.mode === "issue"
         ? 0
-        : db.subscriber.count({ where: { confirmationNeedsReview: true } }),
+        : db.subscriber.count({
+            where: { ...confirmationWhere, confirmationNeedsReview: true },
+          }),
     ]);
     const state = dailyLimitReached
       ? ("daily_limit" as const)

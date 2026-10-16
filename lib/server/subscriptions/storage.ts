@@ -26,9 +26,9 @@ export async function subscribeInTransaction(
   work: ConfirmationWork,
   env: SubscriptionEnv,
   now = new Date(),
-): Promise<void> {
+): Promise<boolean> {
   const input = signupSchema.parse(value);
-  if (input.website) return;
+  if (input.website) return false;
   z.uuid().parse(work.sendId);
   if (!/^[A-Za-z0-9_-]{43}$/.test(work.token))
     throw new Error("Invalid confirmation token");
@@ -45,13 +45,13 @@ export async function subscribeInTransaction(
     where: { email: input.email },
   });
   if (current?.status === "confirmed" || current?.status === "suppressed")
-    return;
+    return false;
   if (
     current?.status === "pending" &&
     current.confirmationExpiresAt &&
     current.confirmationExpiresAt > now
   )
-    return;
+    return false;
   if (
     current &&
     (current.confirmationNeedsReview ||
@@ -59,7 +59,7 @@ export async function subscribeInTransaction(
       (current.confirmationStatus === "pending" &&
         current.confirmationAttempts > 0))
   )
-    return;
+    return false;
   const data = {
     language: input.language,
     status: "pending" as const,
@@ -88,9 +88,9 @@ export async function subscribeInTransaction(
   };
   if (!current) {
     await tx.subscriber.create({ data: { email: input.email, ...data } });
-    return;
+    return true;
   }
-  await tx.subscriber.updateMany({
+  const changed = await tx.subscriber.updateMany({
     where: {
       id: current.id,
       status: current.status,
@@ -104,6 +104,7 @@ export async function subscribeInTransaction(
         : {}),
     },
   });
+  return changed.count === 1;
 }
 
 const clearedConfirmation = {

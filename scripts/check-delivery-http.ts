@@ -121,6 +121,27 @@ async function main() {
       await new Promise((resolve) => setTimeout(resolve, 250));
     }
     assert.ok(ready);
+    const waitForConfirmation = async (email: string, status: string) => {
+      for (let attempt = 0; attempt < 100; attempt++) {
+        const subscriber = await db!.subscriber.findUniqueOrThrow({
+          where: { email },
+        });
+        if (subscriber.confirmationStatus === status) {
+          for (let wait = 0; wait < 100; wait++) {
+            if (
+              !(await db!.pipelineLease.count({
+                where: { expiresAt: { gt: new Date() } },
+              }))
+            )
+              return subscriber;
+            await new Promise((resolve) => setTimeout(resolve, 100));
+          }
+          assert.fail("Confirmation worker did not release its lease");
+        }
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+      assert.fail(`Confirmation did not reach ${status}`);
+    };
     const post = (
       path: string,
       values: Record<string, string>,
@@ -154,6 +175,24 @@ async function main() {
       /\/confirm\?token=([A-Za-z0-9_-]{43})/,
     )?.[1];
     assert.ok(token);
+    const immediate = await waitForConfirmation(email, "accepted");
+    assert.equal(immediate.confirmationAttempts, 1);
+    assert.equal(
+      (
+        await post("/api/subscribe", {
+          email,
+          language: "tr",
+          consent: "yes",
+          website: "",
+        })
+      ).status,
+      202,
+    );
+    assert.equal(
+      (await db.subscriber.findUniqueOrThrow({ where: { email } }))
+        .confirmationAttempts,
+      1,
+    );
     assert.equal(
       (await post("/api/admin/delivery", { mode: "confirmations" })).status,
       401,
@@ -294,6 +333,12 @@ async function main() {
     assert.equal(workspace.status, 200);
     assert.match(await workspace.text(), /Email delivery/);
     const secondEmail = `task11-http-${randomUUID()}@example.com`;
+    await db.rateLimit.update({
+      where: {
+        key: `email:daily-attempts:${new Date().toISOString().slice(0, 10)}`,
+      },
+      data: { hits: 90 },
+    });
     assert.equal(
       (
         await post("/api/subscribe", {
@@ -311,11 +356,24 @@ async function main() {
       },
       data: { hits: 90 },
     });
-    const exhausted = await post(
+    let exhausted = await post(
       "/api/admin/delivery",
       { mode: "confirmations" },
       true,
     );
+    for (
+      let attempt = 0;
+      attempt < 100 &&
+      exhausted.headers.get("location")?.endsWith("notice=busy");
+      attempt++
+    ) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      exhausted = await post(
+        "/api/admin/delivery",
+        { mode: "confirmations" },
+        true,
+      );
+    }
     assert.match(
       exhausted.headers.get("location") ?? "",
       /notice=delivery_daily_limit$/,
@@ -343,7 +401,7 @@ async function main() {
       ).status,
       202,
     );
-    await post("/api/admin/delivery", { mode: "confirmations" }, true);
+    await waitForConfirmation(limitedEmail, "failed");
     assert.equal(
       (
         await db.subscriber.findUniqueOrThrow({
@@ -391,7 +449,8 @@ async function main() {
     await pool.end();
   }
 }
-main().catch(() => {
+main().catch((error: unknown) => {
+  if (error instanceof assert.AssertionError) console.error(error.message);
   console.error(
     "Isolated delivery HTTP check failed; inspect test prerequisites, development schema permissions and free port 3413",
   );

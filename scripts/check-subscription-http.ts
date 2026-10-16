@@ -44,6 +44,7 @@ async function main() {
         ...process.env,
         ...env,
         NODE_ENV: "production",
+        EMAIL_DELIVERY_ENABLED: "false",
         PUBLIC_LAUNCH_APPROVED: "true",
         EMAIL_FROM: "devup <news@devup.example>",
         EMAIL_REPLY_TO: "hello@devup.example",
