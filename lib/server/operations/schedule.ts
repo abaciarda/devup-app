@@ -25,3 +25,7 @@ export function inPublicationWindow(now: Date): boolean {
 export function publicationTimeReached(now: Date): boolean {
   return localMinutes(now) >= 7 * 60;
 }
+
+export function morningDeliveryOverdue(now: Date): boolean {
+  return localMinutes(now) >= 7 * 60 + 15;
+}

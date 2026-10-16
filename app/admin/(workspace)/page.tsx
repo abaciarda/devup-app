@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import DeliveryPanel from "@/components/admin/delivery-panel";
 import OperationsPanel from "@/components/admin/operations-panel";
+import MorningEditionPanel from "@/components/admin/morning-edition-panel";
 import {
   Badge,
   PageHeading,
@@ -50,6 +51,7 @@ async function AdminWorkspace({ searchParams }: { searchParams: Search }) {
           {notice}
         </p>
       )}
+      <MorningEditionPanel />
       <section className="admin-card" aria-labelledby="editions-heading">
         <div className="admin-card-header">
           <div>

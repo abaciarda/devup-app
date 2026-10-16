@@ -634,6 +634,12 @@ async function main() {
     } finally {
       await releasePipelineLease(lease);
     }
+    const workspace = await fetch(`${base}/admin`, { headers: { cookie } });
+    assert.equal(workspace.status, 200);
+    const workspaceHtml = await workspace.text();
+    assert.match(workspaceHtml, /morning-heading/);
+    assert.match(workspaceHtml, /Recipient list captured/);
+    assert.match(workspaceHtml, /Recipients \/ accepted \/ delivered events/);
     const preview = await fetch(`${base}/admin/operations`, {
       headers: { cookie },
     });
