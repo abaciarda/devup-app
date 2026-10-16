@@ -1,0 +1,38 @@
+name: Newsletter daily health
+run-name: ${{ inputs.test_notification && 'TEST — newsletter failure notification' || 'Newsletter daily health' }}
+on:
+  schedule:
+    - cron: "23 5 * * *"
+  workflow_dispatch:
+    inputs:
+      test_notification:
+        description: "Intentionally fail this run to test GitHub failure notifications; no newsletter operation runs"
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: newsletter-health
+  cancel-in-progress: false
+jobs:
+  health:
+    if: vars.AUTOMATION_ENABLED == 'true' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      SITE_URL: ${{ vars.SITE_URL }}
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+    steps:
+      - name: Intentional notification test
+        if: github.event_name == 'workflow_dispatch' && inputs.test_notification
+        run: |
+          echo "::error::TEST ONLY — intentional failure to verify the operator's GitHub notification. No newsletter was prepared, sent, or deleted."
+          exit 1
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: "24"
+      - name: Check today's edition without sending or changing data
+        run: node scripts/run-scheduled.mjs health

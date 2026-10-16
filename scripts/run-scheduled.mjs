@@ -9,7 +9,11 @@ export async function runScheduled(
     pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   },
 ) {
-  if (!["prepare", "delivery", "confirmations", "cleanup"].includes(mode))
+  if (
+    !["prepare", "delivery", "confirmations", "cleanup", "health"].includes(
+      mode,
+    )
+  )
     throw new Error("Invalid scheduled mode");
   const url = new URL(siteUrl);
   if (
@@ -23,25 +27,62 @@ export async function runScheduled(
   )
     throw new Error("Invalid scheduler settings");
   const endpoint = new URL(
-    mode === "cleanup" ? "/api/pipeline/cleanup" : "/api/pipeline/run",
+    mode === "cleanup"
+      ? "/api/pipeline/cleanup"
+      : mode === "health"
+        ? "/api/pipeline/health"
+        : "/api/pipeline/run",
     url,
   );
   for (let attempt = 0; attempt < 3; attempt++) {
     const response = await transport(endpoint, {
       method: "POST",
       redirect: "error",
-      signal: AbortSignal.timeout(mode === "cleanup" ? 70_000 : 330_000),
+      signal: AbortSignal.timeout(
+        mode === "health" ? 40_000 : mode === "cleanup" ? 70_000 : 330_000,
+      ),
       headers: {
         Authorization: `Bearer ${secret}`,
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: mode === "cleanup" ? "" : new URLSearchParams({ mode }).toString(),
+      body:
+        mode === "cleanup" || mode === "health"
+          ? ""
+          : new URLSearchParams({ mode }).toString(),
     });
     if (!response.ok) {
       await response.body?.cancel();
       throw new Error("Scheduled request failed");
     }
     const result = await response.json();
+    if (mode === "health") {
+      const codes = new Set([
+        "pipeline_disabled",
+        "automatic_publication_disabled",
+        "email_sending_disabled",
+        "missing_edition",
+        "draft_needs_review",
+        "edition_not_published",
+        "sending_not_started",
+        "delivery_needs_review",
+        "delivery_incomplete",
+      ]);
+      if (
+        !result ||
+        !["healthy", "attention", "disabled"].includes(result.state) ||
+        !Array.isArray(result.problems) ||
+        result.problems.length > codes.size ||
+        result.problems.some((code) => !codes.has(code)) ||
+        (result.state === "healthy" && result.problems.length !== 0) ||
+        (result.state === "attention" && result.problems.length === 0)
+      )
+        throw new Error("Invalid health response");
+      if (result.state !== "healthy")
+        throw new ScheduledAttentionError(
+          `Daily newsletter health requires attention: ${result.state === "disabled" ? "disabled" : result.problems.join(", ")}`,
+        );
+      return { state: "healthy" };
+    }
     if (
       !result ||
       ![
@@ -82,6 +123,7 @@ export async function runScheduled(
     };
   }
 }
+export class ScheduledAttentionError extends Error {}
 if (
   process.argv[1] &&
   import.meta.url === pathToFileURL(process.argv[1]).href
@@ -91,9 +133,11 @@ if (
     secret: process.env.CRON_SECRET,
   })
     .then((result) => console.log(JSON.stringify(result)))
-    .catch(() => {
+    .catch((error) => {
       console.error(
-        "Scheduled operation failed or needs review; check the private admin workspace and workflow settings",
+        error instanceof ScheduledAttentionError
+          ? error.message
+          : "Scheduled operation failed or needs review; check the private admin workspace and workflow settings",
       );
       process.exitCode = 1;
     });
