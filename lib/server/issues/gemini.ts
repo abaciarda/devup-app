@@ -6,7 +6,7 @@ import {
   buildDraftPrompt,
   modelJsonSchema,
   type ValidatedDraft,
-  validateModelDraft,
+  validateModelResponse,
 } from "./draft-content";
 import {
   type GenerationEnv,
@@ -143,16 +143,19 @@ export async function generateBilingualDraft(
       outputTokens: null,
       totalTokens: null,
     };
+    let requestSignal: AbortSignal | undefined;
+    let stage: "request" | "envelope" | "json" | "validation" = "request";
     try {
       signal.throwIfAborted();
       if (index > 0) await pause(index === 1 ? 2000 : 4000, signal);
+      requestSignal = AbortSignal.any([signal, AbortSignal.timeout(60_000)]);
       const response = await fetcher(
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
         {
           method: "POST",
           cache: "no-store",
           redirect: "error",
-          signal: AbortSignal.any([signal, AbortSignal.timeout(60_000)]),
+          signal: requestSignal,
           headers: {
             "Content-Type": "application/json",
             "x-goog-api-key": env.GEMINI_API_KEY,
@@ -161,6 +164,9 @@ export async function generateBilingualDraft(
             contents: [{ role: "user", parts: [{ text: prompt }] }],
             generationConfig: {
               maxOutputTokens: 16_384,
+              ...(/^gemini-[34](?:[.-]|$)/.test(model)
+                ? { thinkingConfig: { thinkingLevel: "low" } }
+                : {}),
               responseFormat: {
                 text: { mimeType: "APPLICATION_JSON", schema: modelJsonSchema },
               },
@@ -172,6 +178,7 @@ export async function generateBilingualDraft(
         await response.body?.cancel();
         throw new GenerationFailure(`http_${response.status}`);
       }
+      stage = "envelope";
       const envelope = envelopeSchema.parse(await readJson(response));
       attempt.modelVersion = envelope.modelVersion ?? null;
       attempt.inputTokens = envelope.usageMetadata?.promptTokenCount ?? null;
@@ -192,7 +199,10 @@ export async function generateBilingualDraft(
           .filter((part) => !part.thought)
           .map((part) => part.text ?? "")
           .join("") ?? "";
-      const draft = validateModelDraft(JSON.parse(answer), pool);
+      stage = "json";
+      const value: unknown = JSON.parse(answer);
+      stage = "validation";
+      const draft = validateModelResponse(value, pool);
       attempt.code = draft ? "ok" : "insufficient_supported_content";
       attempts.push(attempt);
       return { draft, model, attempts };
@@ -201,7 +211,17 @@ export async function generateBilingualDraft(
         ? "deadline"
         : error instanceof GenerationFailure
           ? error.code
-          : "invalid_response_or_network";
+          : requestSignal?.aborted
+            ? "request_timeout"
+            : stage === "validation"
+              ? error instanceof z.ZodError
+                ? "invalid_draft_schema"
+                : "invalid_draft_content"
+              : stage === "json"
+                ? "invalid_draft_json"
+                : stage === "envelope"
+                  ? "invalid_response"
+                  : "network_error";
       attempt.code = code;
       attempts.push(attempt);
       if (
@@ -212,6 +232,8 @@ export async function generateBilingualDraft(
         throw new GenerationFailure(code, attempts);
       }
       if (code === "http_404" && index === 0) index = 1;
+      if (code === "request_timeout" && index === 0 && models.length > 2)
+        index = 1;
       if (index === models.length - 1)
         throw new GenerationFailure(code, attempts);
     }

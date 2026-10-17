@@ -3,6 +3,7 @@ import {
   buildDraftPrompt,
   modelEvidencePassages,
   validateModelDraft,
+  validateModelResponse,
 } from "../lib/server/issues/draft-content";
 import {
   generateBilingualDraft,
@@ -108,7 +109,29 @@ const insufficient = {
   tr: { title: "", intro: "", news: [] },
   en: { title: "", intro: "", news: [] },
 };
+const insufficientResponse = {
+  ...insufficient,
+  tr: { title: "", intro: "" },
+  en: { title: "", intro: "" },
+  mainStories: [],
+  briefStories: [],
+};
 assert.equal(validateModelDraft(insufficient, fixture.pool), null);
+assert.deepEqual(
+  validateModelResponse(fixture.response, fixture.pool),
+  validated,
+);
+assert.equal(validateModelResponse(insufficientResponse, fixture.pool), null);
+const oversizedBrief = structuredClone(fixture.response);
+oversizedBrief.briefStories[0].tr.summary = "a".repeat(421);
+assert.throws(() => validateModelResponse(oversizedBrief, fixture.pool));
+const unknownEvidence = structuredClone(fixture.response);
+unknownEvidence.mainStories[0].evidenceIndex = 19;
+assert.throws(() => validateModelResponse(unknownEvidence, fixture.pool));
+const invalidTranslation = structuredClone(fixture.response);
+invalidTranslation.mainStories[0].tr.summary =
+  "The release adds a typed configuration interface and improves the error messages that are shown to developers.";
+assert.throws(() => validateModelResponse(invalidTranslation, fixture.pool));
 
 let calls = 0;
 const fetcher: typeof fetch = async (input, init) => {
@@ -193,7 +216,7 @@ const stopped = await generateBilingualDraft(fixture.pool, "2099-04-01", {
       candidates: [
         {
           finishReason: "STOP",
-          content: { parts: [{ text: JSON.stringify(insufficient) }] },
+          content: { parts: [{ text: JSON.stringify(insufficientResponse) }] },
         },
       ],
     }),
@@ -226,4 +249,69 @@ await assert.rejects(
   (error: unknown) =>
     error instanceof GenerationFailure && error.code === "deadline",
 );
+for (const [code, response] of [
+  [
+    "invalid_draft_schema",
+    () =>
+      json({
+        ...fixture.envelope,
+        candidates: [
+          {
+            finishReason: "STOP",
+            content: { parts: [{ text: JSON.stringify(oversizedBrief) }] },
+          },
+        ],
+      }),
+  ],
+  [
+    "invalid_draft_content",
+    () =>
+      json({
+        ...fixture.envelope,
+        candidates: [
+          {
+            finishReason: "STOP",
+            content: { parts: [{ text: JSON.stringify(unknownEvidence) }] },
+          },
+        ],
+      }),
+  ],
+  [
+    "invalid_draft_json",
+    () =>
+      json({
+        candidates: [
+          { finishReason: "STOP", content: { parts: [{ text: "not JSON" }] } },
+        ],
+      }),
+  ],
+  ["invalid_response", () => json({ candidates: "invalid" })],
+] as const) {
+  await assert.rejects(
+    generateBilingualDraft(fixture.pool, "2099-04-01", {
+      env,
+      pause,
+      fetcher: async () => response(),
+    }),
+    (error: unknown) =>
+      error instanceof GenerationFailure &&
+      error.code === code &&
+      error.attempts.length === 3,
+  );
+}
+await generateBilingualDraft(fixture.pool, "2099-04-01", {
+  env: { ...env, GEMINI_MODEL: "gemini-3.8-flash" },
+  pause,
+  fetcher: async (_input, init) => {
+    const body = JSON.parse(String(init?.body));
+    assert.equal(body.generationConfig.thinkingConfig.thinkingLevel, "low");
+    assert.ok(
+      body.generationConfig.responseFormat.text.schema.properties.mainStories,
+    );
+    assert.ok(
+      body.generationConfig.responseFormat.text.schema.properties.briefStories,
+    );
+    return json(fixture.envelope);
+  },
+});
 console.log("Draft validation and mocked Gemini checks passed");

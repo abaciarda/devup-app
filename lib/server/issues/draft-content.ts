@@ -37,7 +37,71 @@ export const modelDraftSchema = z.strictObject({
   en: modelEditionSchema,
 });
 
-export const modelJsonSchema = z.toJSONSchema(modelDraftSchema, {
+const responseTextSchema = z.strictObject({
+  title: z
+    .string()
+    .min(5)
+    .max(180)
+    .describe("A factual headline, at most 100 characters."),
+  summary: z
+    .string()
+    .min(40)
+    .max(1000)
+    .describe(
+      "A source-supported main story summary, normally 350 to 700 characters.",
+    ),
+});
+const responseBriefTextSchema = responseTextSchema.extend({
+  summary: z
+    .string()
+    .min(40)
+    .max(briefSummaryLimit)
+    .describe(
+      "A brief update: 1 or 2 short sentences. Aim for 200 to 280 characters, never exceed 420 characters including spaces.",
+    ),
+});
+const responseStorySchema = z.strictObject({
+  rawItemId: z.number().int().positive(),
+  category: z.enum(editorialCategories),
+  evidenceIndex: z.number().int().min(0).max(19),
+  tr: responseTextSchema,
+  en: responseTextSchema,
+});
+const responseEditionSchema = z.strictObject({
+  title: z
+    .string()
+    .max(80)
+    .describe(
+      "An inbox-friendly title of 50 to 70 characters; never exceed 80 characters including spaces. Empty for insufficient output.",
+    ),
+  intro: z.string().max(600),
+});
+export const modelResponseSchema = z.strictObject({
+  status: z.enum(["ready", "insufficient"]),
+  reason: z.string().max(300),
+  featuredRawItemIds: z.array(z.number().int().positive()).max(3),
+  tr: responseEditionSchema,
+  en: responseEditionSchema,
+  mainStories: z
+    .array(responseStorySchema)
+    .max(mainStoryLimit)
+    .describe(
+      `Exactly ${mainStoryLimit} main stories for ready output, empty for insufficient output.`,
+    ),
+  briefStories: z
+    .array(
+      responseStorySchema.extend({
+        tr: responseBriefTextSchema,
+        en: responseBriefTextSchema,
+      }),
+    )
+    .max(briefStoryLimit)
+    .describe(
+      "Optional short updates, separate from main stories. Empty if there are no additional worthwhile stories.",
+    ),
+});
+
+export const modelJsonSchema = z.toJSONSchema(modelResponseSchema, {
   target: "draft-7",
 });
 
@@ -53,6 +117,38 @@ export const evidenceSchema = z
 
 export type DraftEvidence = z.infer<typeof evidenceSchema>;
 export type ValidatedDraft = { content: IssueContent; evidence: DraftEvidence };
+
+export function validateModelResponse(
+  value: unknown,
+  pool: Candidate[],
+): ValidatedDraft | null {
+  const response = modelResponseSchema.parse(value);
+  if (
+    response.status === "ready" &&
+    response.mainStories.length !== mainStoryLimit
+  )
+    throw new Error("Ready content needs six main stories");
+  const stories = [...response.mainStories, ...response.briefStories];
+  const localize = (language: "tr" | "en") => ({
+    ...response[language],
+    news: stories.map((story) => ({
+      rawItemId: story.rawItemId,
+      category: story.category,
+      evidenceIndex: story.evidenceIndex,
+      ...story[language],
+    })),
+  });
+  return validateModelDraft(
+    {
+      status: response.status,
+      reason: response.reason,
+      featuredRawItemIds: response.featuredRawItemIds,
+      tr: localize("tr"),
+      en: localize("en"),
+    },
+    pool,
+  );
+}
 
 export function modelSourceText(candidate: Candidate): string {
   return candidate.sourceText
@@ -132,13 +228,14 @@ export function buildDraftPrompt(
     "",
     "FORMAT",
     "Categories: ai for AI and LLMs; security for vulnerabilities, breaches, privacy and cryptography; software for languages, runtimes, engineering practice and deep-dives; tools for developer tools and products; open_source for project governance, licensing and maintenance; industry for companies, markets, law and regulation.",
-    "Both languages must have identical story IDs, order and categories.",
+    `Return mainStories (exactly ${mainStoryLimit} stories) and briefStories (up to ${briefStoryLimit} additional short updates). Never put main-length summaries in briefStories.`,
+    "Each story has one shared rawItemId, category and evidenceIndex, followed by tr and en objects containing its translated title and summary. Do not repeat story identities or evidence indices inside the translations.",
     "Each candidate contains numbered source passages. Read them as its source text.",
     "Choose an evidenceIndex from that candidate's passages that supports the core claim of your summary.",
-    "Use the identical evidenceIndex for a story in both languages. Never invent an index.",
+    "The shared evidenceIndex must support the core claim in both translations. Never invent an index.",
     `Choose exactly three distinct featured IDs from the ${mainStoryLimit} main stories: the strongest stories for the website's front page.`,
     `If fewer than ${minimumEditionStories} stories have enough support, return status insufficient, a short reason,`,
-    "empty news and featured arrays, and empty title/intro strings in both languages.",
+    "empty mainStories, briefStories and featured arrays, and empty title/intro strings in both languages.",
     "For ready output use a nonempty edition title and intro in each language and an empty reason.",
     "",
     `Edition date in Europe/Istanbul: ${editionKey}`,

@@ -100,11 +100,30 @@ export function draftFixture(
     tr: edition("tr"),
     en: edition("en"),
   };
+  const storiesResponse = output.tr.news.map((story, index) => ({
+    rawItemId: story.rawItemId,
+    category: story.category,
+    evidenceIndex: story.evidenceIndex,
+    tr: { title: story.title, summary: story.summary },
+    en: {
+      title: output.en.news[index].title,
+      summary: output.en.news[index].summary,
+    },
+  }));
+  const response = {
+    status: output.status,
+    reason: output.reason,
+    featuredRawItemIds: output.featuredRawItemIds,
+    tr: { title: output.tr.title, intro: output.tr.intro },
+    en: { title: output.en.title, intro: output.en.intro },
+    mainStories: storiesResponse.slice(0, 6),
+    briefStories: storiesResponse.slice(6),
+  };
   const envelope = {
     candidates: [
       {
         finishReason: "STOP",
-        content: { parts: [{ text: JSON.stringify(output) }] },
+        content: { parts: [{ text: JSON.stringify(response) }] },
       },
     ],
     modelVersion: "fixture-model",
@@ -114,5 +133,5 @@ export function draftFixture(
       totalTokenCount: 300,
     },
   };
-  return { pool, output, envelope };
+  return { pool, output, response, envelope };
 }
