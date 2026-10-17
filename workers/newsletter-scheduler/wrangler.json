@@ -1,0 +1,17 @@
+{
+  "name": "devup-newsletter-scheduler",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-10-17",
+  "workers_dev": false,
+  "preview_urls": false,
+  "vars": {
+    "SITE_URL": "https://devup.ardaabaci.com",
+    "SCHEDULER_ENABLED": "true"
+  },
+  "triggers": {
+    "crons": ["*/5 * * * *", "15 5 * * *"]
+  },
+  "observability": {
+    "enabled": true
+  }
+}

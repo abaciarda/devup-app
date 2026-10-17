@@ -65,7 +65,7 @@ async function main() {
   let requests = 0;
   const transport: typeof fetch = async (url, init) => {
     seen.push(String(url));
-    assert.equal(init?.redirect, "error");
+    assert.equal(init?.redirect, "manual");
     assert.equal(
       new Headers(init?.headers).get("Authorization"),
       `Bearer ${secret}`,

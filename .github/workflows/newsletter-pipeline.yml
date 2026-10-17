@@ -1,9 +1,5 @@
 name: Newsletter preparation and delivery
 on:
-  schedule:
-    - cron: "30 3 * * *"
-    - cron: "0 4 * * *"
-    - cron: "17,47 * * * *"
   workflow_dispatch:
 permissions:
   contents: read
