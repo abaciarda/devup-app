@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { container } from "@/components/styles";
-import { useLanguage } from "@/components/i18n/language";
+import { useLanguage, useLocalizedHref } from "@/components/i18n/language";
 import { publicCopy } from "@/lib/public-issues";
 import type { IssueSummary } from "@/types/public-issue";
 
 export default function ArchiveSection({ issues }: { issues: IssueSummary[] }) {
   const language = useLanguage();
+  const href = useLocalizedHref();
   const copy = publicCopy[language];
   return (
     <section
@@ -23,7 +24,7 @@ export default function ArchiveSection({ issues }: { issues: IssueSummary[] }) {
           {issues.map((issue) => (
             <Link
               key={issue.id}
-              href={`/digest/${issue.date}`}
+              href={href(`/digest/${issue.date}`)}
               prefetch={false}
               className="flex items-center justify-between gap-5 py-5"
             >
@@ -40,7 +41,7 @@ export default function ArchiveSection({ issues }: { issues: IssueSummary[] }) {
           ))}
         </div>
         <Link
-          href="/archive"
+          href={href("/archive")}
           prefetch={false}
           className="mt-6 inline-block text-sm text-[#2997ff]"
         >

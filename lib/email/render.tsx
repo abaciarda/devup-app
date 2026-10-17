@@ -1,4 +1,5 @@
 import * as React from "react";
+import { localizedPath } from "../localized-routes";
 import { render, toPlainText } from "@react-email/render";
 import { z } from "zod";
 import ConfirmationEmail, { confirmationCopy } from "../../emails/confirmation";
@@ -68,7 +69,12 @@ export async function renderConfirmationEmail(
   const html = await render(
     <ConfirmationEmail
       language={input.language}
-      confirmationUrl={capabilityLink(settings, "/confirm", input.token)}
+      confirmationUrl={capabilityLink(
+        settings,
+        "/confirm",
+        input.token,
+        input.language,
+      )}
       replyTo={settings.EMAIL_REPLY_TO}
     />,
   );
@@ -115,16 +121,21 @@ export async function renderDigestEmail(
       issueNumber={input.issue.editionNumber}
       draft={input.issue.draft}
       dateLabel={dateLabel}
-      webUrl={siteLink(settings, `/digest/${input.issue.date}`)}
+      webUrl={siteLink(
+        settings,
+        localizedPath(`/digest/${input.issue.date}`, input.language),
+      )}
       preferencesUrl={capabilityLink(
         settings,
         "/preferences",
         input.preferencesToken,
+        input.language,
       )}
       unsubscribeUrl={capabilityLink(
         settings,
         "/unsubscribe",
         input.unsubscribeToken,
+        input.language,
       )}
       replyTo={settings.EMAIL_REPLY_TO}
     />,

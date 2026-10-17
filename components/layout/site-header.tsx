@@ -1,14 +1,19 @@
 "use client";
 
 import { container } from "@/components/styles";
-import { useLanguage, useSetLanguage } from "@/components/i18n/language";
+import { useLanguage, useLocalizedHref } from "@/components/i18n/language";
 import { messages } from "@/components/i18n/messages";
+import { localizedPath, stripLanguage } from "@/lib/localized-routes";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import type { Language } from "@/types/digest";
 
 export default function SiteHeader() {
   const language = useLanguage();
-  const setLanguage = useSetLanguage();
+  const href = useLocalizedHref();
+  const { path } = stripLanguage(usePathname());
   const copy = messages[language];
+  const switchTo = (target: Language) => localizedPath(path, target);
 
   return (
     <header className="bg-black text-white">
@@ -16,7 +21,7 @@ export default function SiteHeader() {
         className={`${container} flex min-h-16 flex-wrap items-center justify-between gap-x-5 gap-y-2 py-2 sm:h-16 sm:flex-nowrap sm:py-0`}
       >
         <Link
-          href="/"
+          href={href("/")}
           aria-label={copy.homeLabel}
           className="text-[25px] font-bold tracking-[-1.3px]"
         >
@@ -26,8 +31,8 @@ export default function SiteHeader() {
           aria-label={copy.navLabel}
           className="order-3 flex w-full items-center justify-center gap-6 text-xs text-[#d2d2d7] sm:order-none sm:w-auto sm:justify-start sm:gap-8"
         >
-          <Link href="/#today">{copy.todayLink}</Link>
-          <Link href="/archive" className="focus-visible:rounded-sm">
+          <Link href={href("/#today")}>{copy.todayLink}</Link>
+          <Link href={href("/archive")} className="focus-visible:rounded-sm">
             {copy.archiveLink}
           </Link>
         </nav>
@@ -40,10 +45,11 @@ export default function SiteHeader() {
             aria-labelledby="site-language-label"
             className="flex items-center gap-1"
           >
-            <button
-              type="button"
-              aria-pressed={language === "tr"}
-              onClick={() => setLanguage("tr")}
+            <Link
+              href={switchTo("tr")}
+              hrefLang="tr"
+              lang="tr"
+              aria-current={language === "tr" ? "true" : undefined}
               className={
                 language === "tr"
                   ? "rounded-full bg-white px-3 py-1.5 text-ink"
@@ -51,11 +57,12 @@ export default function SiteHeader() {
               }
             >
               Türkçe
-            </button>
-            <button
-              type="button"
-              aria-pressed={language === "en"}
-              onClick={() => setLanguage("en")}
+            </Link>
+            <Link
+              href={switchTo("en")}
+              hrefLang="en"
+              lang="en"
+              aria-current={language === "en" ? "true" : undefined}
               className={
                 language === "en"
                   ? "rounded-full bg-white px-3 py-1.5 text-ink"
@@ -63,7 +70,7 @@ export default function SiteHeader() {
               }
             >
               English
-            </button>
+            </Link>
           </div>
         </div>
       </div>

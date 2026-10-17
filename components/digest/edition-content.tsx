@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useLanguage } from "@/components/i18n/language";
+import { useLanguage, useLocalizedHref } from "@/components/i18n/language";
 import { publicCopy, storyForCard } from "@/lib/public-issues";
 import type { PublicIssue } from "@/types/public-issue";
 import StoryRow from "./story-row";
 
 export default function EditionContent({ issue }: { issue: PublicIssue }) {
   const language = useLanguage();
+  const href = useLocalizedHref();
   const copy = publicCopy[language];
   const edition = issue.content[language];
   return (
@@ -30,7 +31,7 @@ export default function EditionContent({ issue }: { issue: PublicIssue }) {
         ))}
       </ol>
       <Link
-        href="/archive"
+        href={href("/archive")}
         prefetch={false}
         className="mt-8 inline-block text-blue"
       >

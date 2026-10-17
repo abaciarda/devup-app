@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useLanguage } from "@/components/i18n/language";
+import { useLanguage, useLocalizedHref } from "@/components/i18n/language";
 import StoryRow from "@/components/digest/story-row";
 import { container, eyebrow, link } from "@/components/styles";
 import { featuredStories, publicCopy, storyForCard } from "@/lib/public-issues";
@@ -9,6 +9,7 @@ import type { PublicIssue } from "@/types/public-issue";
 
 export default function TodaySection({ issue }: { issue: PublicIssue | null }) {
   const language = useLanguage();
+  const href = useLocalizedHref();
   const copy = publicCopy[language];
   if (!issue)
     return (
@@ -50,7 +51,7 @@ export default function TodaySection({ issue }: { issue: PublicIssue | null }) {
         ))}
       </ol>
       <Link
-        href={`/digest/${issue.date}`}
+        href={href(`/digest/${issue.date}`)}
         prefetch={false}
         className={`${link} mt-6`}
       >

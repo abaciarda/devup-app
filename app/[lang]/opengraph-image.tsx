@@ -1,11 +1,28 @@
-import { site } from "@/lib/site";
 import { ImageResponse } from "next/og";
+import { isLanguage } from "@/lib/localized-routes";
 
-export const alt = "devup — Daily tech news for developers";
+export const alt = "devup";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-export default function OpenGraphImage() {
+const copy = {
+  tr: {
+    lines: ["Her sabah teknoloji özeti.", "Beş dakikada oku."],
+    footer: "Teknoloji, yazılım ve yapay zekâ haberleri · Türkçe ve İngilizce",
+  },
+  en: {
+    lines: ["Your daily tech briefing.", "Read it in five minutes."],
+    footer: "Technology, software and AI news · Turkish and English",
+  },
+};
+
+export default async function OpenGraphImage({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}) {
+  const { lang } = await params;
+  const text = copy[isLanguage(lang) ? lang : "tr"];
   return new ImageResponse(
     <div
       style={{
@@ -28,10 +45,10 @@ export default function OpenGraphImage() {
           marginBottom: 36,
         }}
       >
-        {site.name} ↗
+        devup ↗
       </div>
       <div style={{ fontSize: 72, fontWeight: 600, letterSpacing: -3 }}>
-        Your daily tech briefing.
+        {text.lines[0]}
       </div>
       <div
         style={{
@@ -41,10 +58,10 @@ export default function OpenGraphImage() {
           color: "#6e6e73",
         }}
       >
-        Read it in five minutes.
+        {text.lines[1]}
       </div>
       <div style={{ fontSize: 25, marginTop: 36, color: "#6e6e73" }}>
-        Technology, software and AI news.
+        {text.footer}
       </div>
     </div>,
     size,

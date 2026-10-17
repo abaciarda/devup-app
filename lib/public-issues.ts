@@ -109,6 +109,11 @@ export const publicCopy = {
     fullIssue: "Read the full edition",
     archive: "All editions",
     archiveIntro: "Published editions, newest first.",
+    archiveDescription:
+      "Every devup edition: daily technology, software and AI news summarized for developers, newest first.",
+    notFound: "Page not found",
+    notFoundBody: "This page does not exist or is no longer available.",
+    backHome: "Go to the latest edition",
     emptyArchive: "No editions on this page.",
     older: "Older editions",
     newer: "Newer editions",
@@ -127,6 +132,11 @@ export const publicCopy = {
     fullIssue: "Bültenin tamamını oku",
     archive: "Tüm bültenler",
     archiveIntro: "Yayımlanan bültenler, yeniden eskiye.",
+    archiveDescription:
+      "devup bültenlerinin tamamı: geliştiriciler için özetlenen günlük teknoloji, yazılım ve yapay zekâ haberleri, yeniden eskiye.",
+    notFound: "Sayfa bulunamadı",
+    notFoundBody: "Bu sayfa yok ya da artık yayında değil.",
+    backHome: "Son bültene git",
     emptyArchive: "Bu sayfada bülten yok.",
     older: "Önceki bültenler",
     newer: "Daha yeni bültenler",

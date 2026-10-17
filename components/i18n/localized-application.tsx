@@ -3,34 +3,21 @@ import SiteFooter from "@/components/layout/site-footer";
 import SiteHeader from "@/components/layout/site-header";
 import { LanguageProvider } from "@/components/i18n/language";
 import SkipLink from "@/components/i18n/skip-link";
-import type { getRequestLanguages } from "@/lib/request-language";
-import ApplicationChrome from "@/components/layout/application-chrome";
+import type { Language } from "@/types/digest";
 
 export default function LocalizedApplication({
   children,
-  languages,
+  language,
 }: {
   children: ReactNode;
-  languages: Awaited<ReturnType<typeof getRequestLanguages>>;
+  language: Language;
 }) {
-  const { language, newsletterLanguage } = languages;
-
   return (
-    <LanguageProvider
-      initialLanguage={language}
-      initialNewsletterLanguage={newsletterLanguage}
-    >
-      <ApplicationChrome
-        header={
-          <>
-            <SkipLink />
-            <SiteHeader />
-          </>
-        }
-        footer={<SiteFooter />}
-      >
-        {children}
-      </ApplicationChrome>
+    <LanguageProvider language={language}>
+      <SkipLink />
+      <SiteHeader />
+      {children}
+      <SiteFooter />
     </LanguageProvider>
   );
 }

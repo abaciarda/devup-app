@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useLanguage } from "@/components/i18n/language";
+import { useLanguage, useLocalizedHref } from "@/components/i18n/language";
 import { useState } from "react";
 
 const copy = {
@@ -52,7 +52,9 @@ export default function SubscriptionActionView({
   language?: "en" | "tr";
   result?: string;
 }) {
-  const text = copy[useLanguage()];
+  const uiLanguage = useLanguage();
+  const text = copy[uiLanguage];
+  const href = useLocalizedHref();
   const [busy, setBusy] = useState(false);
   const heading = result
     ? ((
@@ -72,7 +74,7 @@ export default function SubscriptionActionView({
         <>
           <p className="text-muted">{text.explain}</p>
           <form
-            action={`/api/${action}`}
+            action={`/api/${action}${uiLanguage === "en" ? "?ui=en" : ""}`}
             method="post"
             onSubmit={() => setBusy(true)}
             className="space-y-5"
@@ -107,16 +109,16 @@ export default function SubscriptionActionView({
         </>
       )}
       <p>
-        <Link href="/" className="text-blue">
+        <Link href={href("/")} className="text-blue">
           {text.home}
         </Link>
       </p>
       {result === "unsubscribe" && (
-        <Link href="/#subscribe" className="block text-blue">
+        <Link href={href("/#subscribe")} className="block text-blue">
           {text.again}
         </Link>
       )}
-      <Link href="/privacy" className="block text-sm text-muted">
+      <Link href={href("/privacy")} className="block text-sm text-muted">
         {text.privacy}
       </Link>
     </main>

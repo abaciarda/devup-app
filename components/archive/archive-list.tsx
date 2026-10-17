@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useLanguage } from "@/components/i18n/language";
+import { useLanguage, useLocalizedHref } from "@/components/i18n/language";
 import { publicCopy } from "@/lib/public-issues";
 import type { ArchivePage } from "@/types/public-issue";
 
 export default function ArchiveList({ page }: { page: ArchivePage }) {
   const language = useLanguage();
+  const href = useLocalizedHref();
   const copy = publicCopy[language];
   return (
     <main
@@ -22,7 +23,7 @@ export default function ArchiveList({ page }: { page: ArchivePage }) {
           {page.issues.map((issue) => (
             <li key={issue.id} className="py-5">
               <Link
-                href={`/digest/${issue.date}`}
+                href={href(`/digest/${issue.date}`)}
                 prefetch={false}
                 className="text-xl font-semibold"
               >
@@ -41,17 +42,17 @@ export default function ArchiveList({ page }: { page: ArchivePage }) {
         className="flex flex-wrap gap-6 text-sm text-blue"
       >
         {page.newer && (
-          <Link href={`/archive?after=${page.newer}`} prefetch={false}>
+          <Link href={href(`/archive?after=${page.newer}`)} prefetch={false}>
             ← {copy.newer}
           </Link>
         )}
         {page.older && (
-          <Link href={`/archive?before=${page.older}`} prefetch={false}>
+          <Link href={href(`/archive?before=${page.older}`)} prefetch={false}>
             {copy.older} →
           </Link>
         )}
         {!page.issues.length && (
-          <Link href="/archive" prefetch={false}>
+          <Link href={href("/archive")} prefetch={false}>
             {copy.firstPage}
           </Link>
         )}

@@ -111,3 +111,13 @@ export async function readSitemapFromDatabase(client: Reader = getDb()) {
     };
   });
 }
+
+export async function readFeedFromDatabase(client: Reader = getDb()) {
+  const rows = await client.issue.findMany({
+    where: { publishedAt: { not: null } },
+    orderBy: { editionDate: "desc" },
+    take: 20,
+    select: publicSelect,
+  });
+  return rows.map(parsePublicIssue);
+}

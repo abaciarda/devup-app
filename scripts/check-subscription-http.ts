@@ -94,7 +94,7 @@ async function main() {
     const pending = await db.subscriber.findUniqueOrThrow({ where: { email } });
     const payload = pending.confirmationPayload as { text: string };
     const confirmationUrl = payload.text.match(
-      /https:\/\/devup\.example\/confirm\?token=([A-Za-z0-9_-]{43})/,
+      /https:\/\/devup\.example\/en\/confirm\?token=([A-Za-z0-9_-]{43})/,
     );
     assert.ok(
       confirmationUrl,
@@ -102,7 +102,7 @@ async function main() {
     );
     const token = confirmationUrl[1];
     assert.equal(pending.confirmationTokenHash, hashToken(token));
-    const page = await fetch(`${base}/confirm?token=${token}`);
+    const page = await fetch(`${base}/en/confirm?token=${token}`);
     assert.equal(page.headers.get("Referrer-Policy"), "no-referrer");
     assert.match(page.headers.get("Cache-Control") ?? "", /no-store/);
     assert.match(await page.text(), /name="proof"/);
@@ -114,14 +114,14 @@ async function main() {
       (await post("/api/confirm", { token, proof: "x".repeat(30) })).status,
       403,
     );
-    const confirmed = await post("/api/confirm", {
+    const confirmed = await post("/api/confirm?ui=en", {
       token,
       proof: createSubscriptionProof(token, "confirm", env),
     });
     assert.equal(confirmed.status, 303);
     assert.equal(
       confirmed.headers.get("location"),
-      `${env.SITE_URL}/subscription/result?state=confirm`,
+      `${env.SITE_URL}/en/subscription/result?state=confirm`,
     );
     const subscriber = await db.subscriber.findUniqueOrThrow({
       where: { email },

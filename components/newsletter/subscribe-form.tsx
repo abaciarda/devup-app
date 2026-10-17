@@ -4,6 +4,7 @@ import {
   useLanguage,
   useNewsletterLanguage,
   useSetNewsletterLanguage,
+  useLocalizedHref,
 } from "@/components/i18n/language";
 import { messages } from "@/components/i18n/messages";
 import { useState, type FormEvent } from "react";
@@ -17,6 +18,7 @@ export default function SubscribeForm() {
   const [consent, setConsent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const language = useLanguage();
+  const href = useLocalizedHref();
   const newsletterLanguage = useNewsletterLanguage();
   const setNewsletterLanguage = useSetNewsletterLanguage();
   const copy = messages[language];
@@ -150,7 +152,7 @@ export default function SubscribeForm() {
         />
         <span>
           {copy.consentBefore}
-          <Link href="/privacy" className="text-blue">
+          <Link href={href("/privacy")} className="text-blue">
             {copy.consentLink}
           </Link>
           {copy.consentAfter}

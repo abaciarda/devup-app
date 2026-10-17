@@ -1,3 +1,4 @@
+import { localizedPath } from "../localized-routes";
 import { z } from "zod";
 import type { Language } from "../../types/digest";
 
@@ -74,10 +75,16 @@ export function capabilityLink(
   settings: EmailSettings,
   path: "/confirm" | "/unsubscribe" | "/preferences" | "/api/unsubscribe",
   token: string,
+  language: EmailLanguage = "tr",
 ): string {
   if (!/^[A-Za-z0-9_.-]{20,1024}$/.test(token))
     throw new Error("Invalid email link token format");
-  const url = new URL(siteLink(settings, path));
+  const url = new URL(
+    siteLink(
+      settings,
+      path.startsWith("/api/") ? path : localizedPath(path, language),
+    ),
+  );
   url.searchParams.set("token", token);
   return url.href;
 }

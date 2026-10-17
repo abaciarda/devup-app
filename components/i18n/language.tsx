@@ -4,12 +4,11 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
-  useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
-import { useRouter } from "next/navigation";
+import { localizedPath } from "@/lib/localized-routes";
 
 import type { Language } from "@/types/digest";
 export type { Language } from "@/types/digest";
@@ -17,71 +16,65 @@ export type { Language } from "@/types/digest";
 type LanguageContextValue = {
   language: Language;
   newsletterLanguage: Language;
-  setLanguage: (language: Language) => void;
   setNewsletterLanguage: (language: Language) => void;
 };
 
-const siteLanguageCookie = "devup-site-language";
 const emailLanguageCookie = "devup-email-language";
-const siteLanguageStorageKey = "devup-site-language";
 const emailLanguageStorageKey = "devup-email-language";
 const LanguageContext = createContext<LanguageContextValue | null>(null);
 
-function persistLanguage(name: string, value: Language, storageKey: string) {
-  document.cookie = `${name}=${value}; Path=/; Max-Age=31536000; SameSite=Lax`;
+const preferenceEvent = "devup-newsletter-language";
+
+function subscribePreference(onChange: () => void): () => void {
+  window.addEventListener(preferenceEvent, onChange);
+  window.addEventListener("storage", onChange);
+  return () => {
+    window.removeEventListener(preferenceEvent, onChange);
+    window.removeEventListener("storage", onChange);
+  };
+}
+
+function storedNewsletterLanguage(): Language | null {
+  const cookie = document.cookie
+    .split("; ")
+    .find((entry) => entry.startsWith(`${emailLanguageCookie}=`))
+    ?.split("=")[1];
+  let stored: string | null = null;
   try {
-    window.localStorage.setItem(storageKey, value);
+    stored = window.localStorage.getItem(emailLanguageStorageKey);
   } catch {}
+  const value = cookie ?? stored;
+  return value === "tr" || value === "en" ? value : null;
 }
 
 export function LanguageProvider({
   children,
-  initialLanguage,
-  initialNewsletterLanguage,
+  language,
 }: {
   children: ReactNode;
-  initialLanguage: Language;
-  initialNewsletterLanguage: Language | null;
+  language: Language;
 }) {
-  const router = useRouter();
-  const [language, setCurrentLanguage] = useState(initialLanguage);
-  const [newsletterLanguage, setCurrentNewsletterLanguage] = useState(
-    initialNewsletterLanguage ?? initialLanguage,
-  );
-  const [hasNewsletterPreference, setHasNewsletterPreference] = useState(
-    initialNewsletterLanguage !== null,
-  );
-
-  const setLanguage = useCallback(
-    (nextLanguage: Language) => {
-      setCurrentLanguage(nextLanguage);
-      persistLanguage(siteLanguageCookie, nextLanguage, siteLanguageStorageKey);
-      if (!hasNewsletterPreference) {
-        setCurrentNewsletterLanguage(nextLanguage);
-      }
-      router.refresh();
-    },
-    [hasNewsletterPreference, router],
+  const preference = useSyncExternalStore(
+    subscribePreference,
+    storedNewsletterLanguage,
+    () => null,
   );
 
   const setNewsletterLanguage = useCallback((nextLanguage: Language) => {
-    setCurrentNewsletterLanguage(nextLanguage);
-    setHasNewsletterPreference(true);
-    persistLanguage(emailLanguageCookie, nextLanguage, emailLanguageStorageKey);
+    document.cookie = `${emailLanguageCookie}=${nextLanguage}; Path=/; Max-Age=31536000; SameSite=Lax`;
+    try {
+      window.localStorage.setItem(emailLanguageStorageKey, nextLanguage);
+    } catch {}
+    window.dispatchEvent(new Event(preferenceEvent));
   }, []);
-
-  useEffect(() => {
-    document.documentElement.lang = language;
-  }, [language]);
 
   const value = useMemo(
     () => ({
       language,
-      newsletterLanguage,
-      setLanguage,
+      newsletterLanguage: preference ?? language,
       setNewsletterLanguage,
     }),
-    [language, newsletterLanguage, setLanguage, setNewsletterLanguage],
+    [language, preference, setNewsletterLanguage],
   );
 
   return (
@@ -103,12 +96,16 @@ export function useLanguage() {
   return useLanguageContext().language;
 }
 
-export function useNewsletterLanguage() {
-  return useLanguageContext().newsletterLanguage;
+export function useLocalizedHref() {
+  const language = useLanguage();
+  return useCallback(
+    (path: string) => localizedPath(path, language),
+    [language],
+  );
 }
 
-export function useSetLanguage() {
-  return useLanguageContext().setLanguage;
+export function useNewsletterLanguage() {
+  return useLanguageContext().newsletterLanguage;
 }
 
 export function useSetNewsletterLanguage() {

@@ -8,10 +8,7 @@ import {
   readSubscriptionForm,
   subscriptionResponse,
 } from "./http";
-import {
-  verifySubscriberLink,
-  type SubscriptionAction,
-} from "./links";
+import { verifySubscriberLink, type SubscriptionAction } from "./links";
 import {
   confirmInTransaction,
   preferencesInTransaction,
@@ -48,7 +45,12 @@ export async function handleSubscriptionAction(
       },
       { maxWait: 5000, timeout: 10000 },
     );
-    const result = new URL("/subscription/result", env.SITE_URL);
+    const result = new URL(
+      new URL(request.url).searchParams.get("ui") === "en"
+        ? "/en/subscription/result"
+        : "/subscription/result",
+      env.SITE_URL,
+    );
     result.searchParams.set("state", valid ? action : "invalid");
     return subscriptionResponse(NextResponse.redirect(result, 303));
   } catch {
