@@ -16,6 +16,7 @@ import {
   releasePipelineLease,
   type PipelineLease,
 } from "../operations/lease";
+import { filterNovelCandidates, loadRecentCoverage } from "./novelty";
 
 export type GenerateIssueResult =
   | { status: "busy" }
@@ -33,6 +34,7 @@ export async function generateIssue(
     now?: () => Date;
     generator?: typeof generateBilingualDraft;
     lease?: PipelineLease;
+    noveltyReviewer?: typeof filterNovelCandidates;
   } = {},
 ): Promise<GenerateIssueResult> {
   const now = options.now ?? (() => new Date());
@@ -57,9 +59,18 @@ export async function generateIssue(
       return { status: "locked", issueId: issue.id };
     }
     try {
-      const pool = await loadDraftCandidates(issue.id, start);
-      if (pool.length < minimumEditionStories)
+      const candidates = await loadDraftCandidates(issue.id, start);
+      if (candidates.length < minimumEditionStories)
         throw new GenerationFailure("insufficient_candidates");
+
+      const history = await loadRecentCoverage(issue.id, date);
+      const pool = await (options.noveltyReviewer ?? filterNovelCandidates)(
+        candidates,
+        history,
+      );
+      if (pool.length < minimumEditionStories)
+        throw new GenerationFailure("insufficient_novel_candidates");
+
       const recentTitles = await loadRecentStoryTitles(issue.id, date);
       const run = await (options.generator ?? generateBilingualDraft)(
         pool,

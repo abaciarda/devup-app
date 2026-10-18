@@ -73,7 +73,7 @@ const envelopeSchema = z.object({
     .optional(),
 });
 
-async function readJson(response: Response): Promise<unknown> {
+export async function readJson(response: Response): Promise<unknown> {
   const limit = 400_000;
   if (!response.headers.get("content-type")?.includes("application/json")) {
     await response.body?.cancel();
