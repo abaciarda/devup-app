@@ -2,7 +2,7 @@ import "dotenv/config";
 import { performance } from "node:perf_hooks";
 
 const origin = new URL(
-  process.env.PERFORMANCE_ORIGIN ?? "https://devup.ardaabaci.com",
+  process.env.SITE_URL || "https://devup.ardaabaci.com",
 );
 if (origin.username || origin.password || origin.search || origin.hash)
   throw new Error("Use a website origin without credentials or query parameters");
