@@ -71,6 +71,7 @@ export function proxy(request: NextRequest) {
   if (
     pathname.startsWith("/api/") ||
     pathname.startsWith("/_next/") ||
+    pathname.startsWith("/_vercel/") ||
     (/\.[a-z0-9]+$/i.test(pathname) && !pathname.endsWith("/rss.xml"))
   )
     return NextResponse.next();

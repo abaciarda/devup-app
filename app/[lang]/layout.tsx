@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import LocalizedApplication from "@/components/i18n/localized-application";
 import { messages } from "@/components/i18n/messages";
 import {
@@ -46,6 +47,7 @@ export default async function RootLayout({ children, params }: Props) {
         <LocalizedApplication language={language}>
           {children}
         </LocalizedApplication>
+        <SpeedInsights />
       </body>
     </html>
   );

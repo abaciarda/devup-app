@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { ReactNode } from "react";
 import { siteOrigin } from "@/lib/seo";
 import "../globals.css";
@@ -15,6 +16,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     <html lang="en">
       <body>
         <div className="admin-shell">{children}</div>
+        <SpeedInsights />
       </body>
     </html>
   );
