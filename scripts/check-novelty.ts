@@ -94,6 +94,24 @@ assert.deepEqual(
   [4, 6],
 );
 
+const oversizedQuote = structuredClone(review);
+oversizedQuote.decisions[1].changeEvidence = "x".repeat(241);
+assert.deepEqual(
+  validateNoveltyDecisions(oversizedQuote, pool, history).map(
+    (item) => item.rawItemId,
+  ),
+  [4, 6],
+);
+
+const oversizedQuoteWithDuplicate = structuredClone(oversizedQuote);
+oversizedQuoteWithDuplicate.decisions[1].rawItemId = pool[0].rawItemId;
+assert.throws(
+  () => validateNoveltyDecisions(oversizedQuoteWithDuplicate, pool, history),
+  (error: unknown) =>
+    error instanceof GenerationFailure &&
+    error.code === "novelty_response_invalid_candidate_ids",
+);
+
 const cycle = structuredClone(review);
 cycle.decisions[2].relatedCandidateId = pool[3].rawItemId;
 cycle.decisions[3] = {

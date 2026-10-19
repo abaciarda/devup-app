@@ -28,6 +28,12 @@ const reviewSchema = z.strictObject({
   decisions: z.array(decisionSchema).max(22),
 });
 
+const reviewEnvelopeSchema = z.strictObject({
+  decisions: z
+    .array(z.object({ rawItemId: z.number().int().positive() }).passthrough())
+    .max(22),
+});
+
 const reviewJsonSchema = z.toJSONSchema(reviewSchema, { target: "draft-07" });
 
 export class NoveltyResponseFailure extends GenerationFailure {
@@ -83,19 +89,19 @@ export function validateNoveltyDecisions(
   pool: Candidate[],
   history: CoveredStory[],
 ): Candidate[] {
-  const parsed = reviewSchema.safeParse(value);
+  const parsed = reviewEnvelopeSchema.safeParse(value);
   if (!parsed.success) throw new NoveltyResponseFailure("schema");
 
   const candidates = new Map(
     pool.map((candidate) => [candidate.rawItemId, candidate]),
   );
   const historyKeys = new Set(history.map((story) => story.key));
-  const decisions = new Map(
-    parsed.data.decisions.map((decision) => [decision.rawItemId, decision]),
+  const candidateIds = new Set(
+    parsed.data.decisions.map((item) => item.rawItemId),
   );
 
   if (
-    decisions.size !== pool.length ||
+    candidateIds.size !== pool.length ||
     parsed.data.decisions.length !== pool.length ||
     parsed.data.decisions.some(
       (decision) => !candidates.has(decision.rawItemId),
@@ -108,6 +114,15 @@ export function validateNoveltyDecisions(
   const reject = (reason: string) => {
     rejected.set(reason, (rejected.get(reason) ?? 0) + 1);
   };
+  const decisions = new Map<number, z.infer<typeof decisionSchema>>();
+  for (const value of parsed.data.decisions) {
+    const decision = decisionSchema.safeParse(value);
+    if (!decision.success) {
+      reject("decision_schema");
+      continue;
+    }
+    decisions.set(decision.data.rawItemId, decision.data);
+  }
 
   for (const decision of decisions.values()) {
     const candidate = candidates.get(decision.rawItemId);
