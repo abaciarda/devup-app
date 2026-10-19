@@ -77,12 +77,22 @@ assert.throws(() => validateNoveltyDecisions(omitted, pool, history));
 
 const inventedHistory = structuredClone(review);
 inventedHistory.decisions[0].relatedHistoryKey = "unknown:999";
-assert.throws(() => validateNoveltyDecisions(inventedHistory, pool, history));
+assert.deepEqual(
+  validateNoveltyDecisions(inventedHistory, pool, history).map(
+    (item) => item.rawItemId,
+  ),
+  [2, 4, 6],
+);
 
 const inventedQuote = structuredClone(review);
 inventedQuote.decisions[1].changeEvidence =
   "This invented source passage does not occur in the candidate text.";
-assert.throws(() => validateNoveltyDecisions(inventedQuote, pool, history));
+assert.deepEqual(
+  validateNoveltyDecisions(inventedQuote, pool, history).map(
+    (item) => item.rawItemId,
+  ),
+  [4, 6],
+);
 
 const cycle = structuredClone(review);
 cycle.decisions[2].relatedCandidateId = pool[3].rawItemId;
@@ -91,7 +101,35 @@ cycle.decisions[3] = {
   verdict: "repeat",
   relatedCandidateId: pool[2].rawItemId,
 };
-assert.throws(() => validateNoveltyDecisions(cycle, pool, history));
+assert.deepEqual(
+  validateNoveltyDecisions(cycle, pool, history).map((item) => item.rawItemId),
+  [2, 6],
+);
+
+const invalidNew = structuredClone(review);
+invalidNew.decisions[3].relatedHistoryKey = history[0].key;
+assert.deepEqual(
+  validateNoveltyDecisions(invalidNew, pool, history).map(
+    (item) => item.rawItemId,
+  ),
+  [2, 6],
+);
+
+const invalidReference = structuredClone(review);
+invalidReference.decisions[3].relatedCandidateId = pool[3].rawItemId;
+assert.deepEqual(
+  validateNoveltyDecisions(invalidReference, pool, history).map(
+    (item) => item.rawItemId,
+  ),
+  [2, 6],
+);
+
+assert.throws(
+  () => validateNoveltyDecisions({ decisions: "invalid" }, pool, history),
+  (error: unknown) =>
+    error instanceof GenerationFailure &&
+    error.code === "novelty_response_invalid_schema",
+);
 
 assert.equal(
   coverageUrl("https://example.org/story?utm_source=hn#discussion"),
@@ -174,7 +212,7 @@ await assert.rejects(
   }),
   (error: unknown) =>
     error instanceof GenerationFailure &&
-    error.code === "novelty_response_invalid",
+    error.code === "novelty_response_invalid_candidate_ids",
 );
 
 let query: unknown;

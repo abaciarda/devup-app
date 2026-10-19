@@ -30,6 +30,12 @@ const reviewSchema = z.strictObject({
 
 const reviewJsonSchema = z.toJSONSchema(reviewSchema, { target: "draft-07" });
 
+export class NoveltyResponseFailure extends GenerationFailure {
+  constructor(public readonly reason: string) {
+    super(`novelty_response_invalid_${reason}`);
+  }
+}
+
 export function coverageUrl(input: string): string {
   const url = new URL(normalizeStoryUrl(input));
   url.hash = "";
@@ -78,7 +84,7 @@ export function validateNoveltyDecisions(
   history: CoveredStory[],
 ): Candidate[] {
   const parsed = reviewSchema.safeParse(value);
-  if (!parsed.success) throw new GenerationFailure("novelty_response_invalid");
+  if (!parsed.success) throw new NoveltyResponseFailure("schema");
 
   const candidates = new Map(
     pool.map((candidate) => [candidate.rawItemId, candidate]),
@@ -95,32 +101,42 @@ export function validateNoveltyDecisions(
       (decision) => !candidates.has(decision.rawItemId),
     )
   )
-    throw new GenerationFailure("novelty_response_invalid");
+    throw new NoveltyResponseFailure("candidate_ids");
 
   const allowed = new Set<number>();
+  const rejected = new Map<string, number>();
+  const reject = (reason: string) => {
+    rejected.set(reason, (rejected.get(reason) ?? 0) + 1);
+  };
 
   for (const decision of decisions.values()) {
     const candidate = candidates.get(decision.rawItemId);
-    if (!candidate) throw new GenerationFailure("novelty_response_invalid");
+    if (!candidate) throw new NoveltyResponseFailure("candidate_ids");
     if (
       decision.relatedHistoryKey !== null &&
       !historyKeys.has(decision.relatedHistoryKey)
-    )
-      throw new GenerationFailure("novelty_response_invalid");
+    ) {
+      reject("history_reference");
+      continue;
+    }
     if (
       decision.relatedCandidateId !== null &&
       (!candidates.has(decision.relatedCandidateId) ||
         decision.relatedCandidateId === decision.rawItemId)
-    )
-      throw new GenerationFailure("novelty_response_invalid");
+    ) {
+      reject("candidate_reference");
+      continue;
+    }
 
     if (decision.verdict === "new_event") {
       if (
         decision.relatedHistoryKey !== null ||
         decision.relatedCandidateId !== null ||
         decision.changeEvidence !== null
-      )
-        throw new GenerationFailure("novelty_response_invalid");
+      ) {
+        reject("new_event_fields");
+        continue;
+      }
       allowed.add(decision.rawItemId);
     }
 
@@ -132,8 +148,10 @@ export function validateNoveltyDecisions(
         !quote ||
         quote.length < 30 ||
         !noveltySourceText(candidate).includes(quote)
-      )
-        throw new GenerationFailure("novelty_response_invalid");
+      ) {
+        reject("update_evidence");
+        continue;
+      }
       allowed.add(decision.rawItemId);
     }
 
@@ -142,7 +160,7 @@ export function validateNoveltyDecisions(
       decision.relatedHistoryKey === null &&
       decision.relatedCandidateId === null
     )
-      throw new GenerationFailure("novelty_response_invalid");
+      reject("repeat_reference");
   }
 
   for (const decision of decisions.values()) {
@@ -151,8 +169,13 @@ export function validateNoveltyDecisions(
       decision.relatedCandidateId !== null &&
       !allowed.has(decision.relatedCandidateId)
     )
-      throw new GenerationFailure("novelty_response_invalid");
+      reject("repeat_target");
   }
+
+  if (rejected.size)
+    console.warn("Novelty review excluded invalid decisions", {
+      reasons: Object.fromEntries(rejected),
+    });
 
   return pool.filter((candidate) => allowed.has(candidate.rawItemId));
 }
