@@ -92,6 +92,21 @@ async function main() {
     }),
     { state: "prepared" },
   );
+  let deferredRequests = 0;
+  assert.deepEqual(
+    await runScheduled("prepare", {
+      siteUrl: "https://devup.example",
+      secret,
+      transport: async () => {
+        deferredRequests += 1;
+        return Response.json({ state: "retry_scheduled" });
+      },
+      pause: async () =>
+        assert.fail("Deferred generation must wait for a later tick"),
+    }),
+    { state: "retry_scheduled" },
+  );
+  assert.equal(deferredRequests, 1);
   await assert.rejects(
     runScheduled("delivery", {
       siteUrl: "https://devup.example",

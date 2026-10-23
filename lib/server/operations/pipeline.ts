@@ -13,6 +13,7 @@ import { runDelivery } from "../delivery/send";
 import { refreshPublishedIssueCache } from "../issues/cache";
 import { publishMorningEdition } from "./automatic-publication";
 import { inPreparationWindow, publicationTimeReached } from "./schedule";
+import { scheduledGenerationState } from "./generation-retry";
 
 export { inPreparationWindow } from "./schedule";
 export async function runPipeline(
@@ -125,7 +126,11 @@ export async function runPipeline(
         update: {},
       }),
     );
-    if (issue.publishedAt || issue.deliveryStartedAt)
+    if (
+      issue.publishedAt ||
+      issue.deliveryStartedAt ||
+      issue.deliveryFinishedAt
+    )
       return { state: "published", issueId: issue.id };
     if (issue.generationStatus === "ready")
       return {
@@ -135,15 +140,17 @@ export async function runPipeline(
             : "waiting_for_approval",
         issueId: issue.id,
       };
-    if (issue.scheduledGenerationAttempts >= 1)
-      return { state: "needs_review", issueId: issue.id };
+    const generationState = scheduledGenerationState(issue, now);
+    if (generationState !== "attempt")
+      return { state: generationState, issueId: issue.id };
     const reserved = await commitUnderPipelineLease(lease, (tx) =>
-      reserveScheduledGeneration(tx, issue.id),
+      reserveScheduledGeneration(tx, issue.id, now),
     );
     if (!reserved) return { state: "needs_review", issueId: issue.id };
     const refreshed = await (dependencies.refresh ?? refreshSources)({ lease });
     if (refreshed.status === "busy") return { state: "busy" };
     if (!refreshed.enoughCandidates) {
+      const finished = (dependencies.now ?? (() => new Date()))();
       await commitUnderPipelineLease(lease, (tx) =>
         tx.issue.updateMany({
           where: {
@@ -154,15 +161,39 @@ export async function runPipeline(
           data: {
             generationStatus: "failed",
             generationError: "scheduled_insufficient_candidates",
+            updatedAt: finished,
           },
         }),
       );
-      return { state: "needs_review", issueId: issue.id };
+      const failed = await getDb().issue.findUniqueOrThrow({
+        where: { id: issue.id },
+      });
+      return {
+        state:
+          scheduledGenerationState(failed, finished) === "needs_review"
+            ? "needs_review"
+            : "retry_scheduled",
+        issueId: issue.id,
+      };
     }
     const result = await (dependencies.generate ?? generateIssue)({
       lease,
       now: dependencies.now,
     });
+    if (result.status === "failed") {
+      const failed = await getDb().issue.findUniqueOrThrow({
+        where: { id: issue.id },
+      });
+      const finished = (dependencies.now ?? (() => new Date()))();
+      return {
+        state:
+          scheduledGenerationState(failed, finished) === "needs_review"
+            ? "needs_review"
+            : "retry_scheduled",
+        issueId: issue.id,
+        date: editionDateKey(now),
+      };
+    }
     return {
       state:
         result.status === "ready"
@@ -183,16 +214,23 @@ export async function runPipeline(
 export async function reserveScheduledGeneration(
   tx: import("../../../generated/prisma/client").Prisma.TransactionClient,
   issueId: number,
+  now = new Date(),
 ) {
+  const issue = await tx.issue.findUnique({ where: { id: issueId } });
+  if (!issue || scheduledGenerationState(issue, now) !== "attempt")
+    return false;
   const changed = await tx.issue.updateMany({
     where: {
       id: issueId,
       publishedAt: null,
       deliveryStartedAt: null,
-      generationStatus: { not: "ready" },
-      scheduledGenerationAttempts: 0,
+      deliveryFinishedAt: null,
+      generationStatus: issue.generationStatus,
+      generationError: issue.generationError,
+      scheduledGenerationAttempts: issue.scheduledGenerationAttempts,
+      updatedAt: issue.updatedAt,
     },
-    data: { scheduledGenerationAttempts: { increment: 1 } },
+    data: { scheduledGenerationAttempts: { increment: 1 }, updatedAt: now },
   });
   return changed.count === 1;
 }

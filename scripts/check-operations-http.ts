@@ -13,6 +13,7 @@ import {
   acquirePipelineLease,
   commitUnderPipelineLease,
   releasePipelineLease,
+  type PipelineLease,
 } from "../lib/server/operations/lease";
 import { createAdminSession } from "../lib/server/admin/session";
 import { editionDateForNow } from "../lib/edition-date";
@@ -88,19 +89,119 @@ async function main() {
         throw new Error("Generation must not run without candidates");
       },
     });
-    assert.equal(insufficient.state, "needs_review");
+    assert.equal(insufficient.state, "retry_scheduled");
     const second = await runPipeline("prepare", {
       now: () => morning,
       refresh: async () => {
         throw new Error("Reserved day must not refresh repeatedly");
       },
     });
-    assert.equal(second.state, "needs_review");
+    assert.equal(second.state, "retry_scheduled");
     const attempted = await db.issue.findUniqueOrThrow({
       where: { editionDate: editionDateForNow(morning) },
     });
     assert.equal(attempted.scheduledGenerationAttempts, 1);
     assert.equal(attempted.publishedAt, null);
+    let retryTime = new Date("2099-12-12T03:30:00Z");
+    let refreshes = 0;
+    let generations = 0;
+    const retryDependencies = {
+      now: () => retryTime,
+      refresh: async () => {
+        refreshes += 1;
+        return {
+          status: "complete" as const,
+          sources: [],
+          candidateCount: 10,
+          enoughCandidates: true,
+        };
+      },
+      generate: async ({ lease }: { lease?: PipelineLease } = {}) => {
+        assert.ok(lease);
+        generations += 1;
+        const retryIssue = await db!.issue.findUniqueOrThrow({
+          where: { editionDate: editionDateForNow(retryTime) },
+        });
+        await db!.issue.update({
+          where: { id: retryIssue.id },
+          data: {
+            generationStatus: generations === 1 ? "failed" : "ready",
+            generationError: generations === 1 ? "novelty_review_failed" : null,
+            updatedAt: retryTime,
+          },
+        });
+        return generations === 1
+          ? {
+              status: "failed" as const,
+              issueId: retryIssue.id,
+              code: "novelty_review_failed",
+              keptPreviousDraft: false,
+            }
+          : {
+              status: "ready" as const,
+              issueId: retryIssue.id,
+              storyCount: 10,
+            };
+      },
+    };
+    assert.equal(
+      (await runPipeline("prepare", retryDependencies)).state,
+      "retry_scheduled",
+    );
+    retryTime = new Date("2099-12-12T03:35:00Z");
+    assert.equal(
+      (await runPipeline("prepare", retryDependencies)).state,
+      "retry_scheduled",
+    );
+    assert.equal(refreshes, 1);
+    assert.equal(generations, 1);
+    retryTime = new Date("2099-12-12T03:40:00Z");
+    assert.equal(
+      (await runPipeline("prepare", retryDependencies)).state,
+      "waiting_for_approval",
+    );
+    assert.equal(refreshes, 2);
+    assert.equal(generations, 2);
+    assert.equal(
+      (await runPipeline("prepare", retryDependencies)).state,
+      "waiting_for_approval",
+    );
+    assert.equal(generations, 2);
+    const recovered = await db.issue.findUniqueOrThrow({
+      where: { editionDate: editionDateForNow(retryTime) },
+    });
+    assert.equal(recovered.scheduledGenerationAttempts, 2);
+    assert.equal(recovered.publishedAt, null);
+    let cappedTime = new Date("2099-12-07T03:30:00Z");
+    let cappedRefreshes = 0;
+    const cappedDependencies = {
+      now: () => cappedTime,
+      refresh: async () => {
+        cappedRefreshes += 1;
+        return {
+          status: "complete" as const,
+          sources: [],
+          candidateCount: 0,
+          enoughCandidates: false,
+        };
+      },
+      generate: async () => {
+        throw new Error("Insufficient sources must not generate");
+      },
+    };
+    for (const [time, state] of [
+      ["2099-12-07T03:30:00Z", "retry_scheduled"],
+      ["2099-12-07T03:40:00Z", "retry_scheduled"],
+      ["2099-12-07T03:50:00Z", "needs_review"],
+      ["2099-12-07T04:00:00Z", "needs_review"],
+    ]) {
+      cappedTime = new Date(time);
+      assert.equal(
+        (await runPipeline("prepare", cappedDependencies)).state,
+        state,
+      );
+    }
+    assert.equal(cappedRefreshes, 3);
     process.env.PIPELINE_ENABLED = "false";
     const afternoon = new Date("2099-12-13T15:17:00Z");
     const manualDependencies = {
