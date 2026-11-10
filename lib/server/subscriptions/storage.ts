@@ -116,21 +116,51 @@ const clearedConfirmation = {
   confirmationRetryable: false,
 };
 
+async function closeConfirmationQueue(
+  tx: Prisma.TransactionClient,
+  id: string,
+) {
+  await tx.subscriber.updateMany({
+    where: {
+      id,
+      confirmationProviderId: null,
+      OR: [
+        { confirmationStatus: "unknown" },
+        { confirmationStatus: "pending", confirmationAttempts: { gt: 0 } },
+      ],
+    },
+    data: { confirmationStatus: "unknown", confirmationNeedsReview: true },
+  });
+  await tx.subscriber.updateMany({
+    where: {
+      id,
+      confirmationProviderId: null,
+      confirmationNeedsReview: false,
+      confirmationStatus: "pending",
+      confirmationAttempts: 0,
+    },
+    data: { confirmationStatus: "suppressed" },
+  });
+}
+
 export async function confirmInTransaction(
   tx: Prisma.TransactionClient,
   token: string,
   now = new Date(),
 ): Promise<boolean> {
   if (!/^[A-Za-z0-9_-]{43}$/.test(token)) return false;
-  const result = await tx.subscriber.updateMany({
+  const [subscriber] = await tx.subscriber.updateManyAndReturn({
     where: {
       status: "pending",
       confirmationTokenHash: hashToken(token),
       confirmationExpiresAt: { gt: now },
     },
     data: { status: "confirmed", confirmedAt: now, ...clearedConfirmation },
+    select: { id: true },
   });
-  return result.count === 1;
+  if (!subscriber) return false;
+  await closeConfirmationQueue(tx, subscriber.id);
+  return true;
 }
 export async function unsubscribeInTransaction(
   tx: Prisma.TransactionClient,
@@ -152,6 +182,7 @@ export async function unsubscribeInTransaction(
     },
   });
   if (!changed.count) return;
+  await closeConfirmationQueue(tx, link.id);
   await tx.sendLog.updateMany({
     where: {
       subscriberId: link.id,

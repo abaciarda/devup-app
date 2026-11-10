@@ -184,7 +184,15 @@ export async function runDelivery(
         : db.sendLog.count({ where: { ...issueWhere, retryable: true } }),
       request.mode === "confirmations"
         ? 0
-        : db.sendLog.count({ where: { ...issueWhere, needsReview: true } }),
+        : db.sendLog.count({
+            where: {
+              ...issueWhere,
+              OR: [
+                { needsReview: true },
+                { status: "unknown", retryable: false },
+              ],
+            },
+          }),
       request.mode === "issue"
         ? 0
         : db.subscriber.count({
@@ -202,7 +210,13 @@ export async function runDelivery(
       request.mode === "issue"
         ? 0
         : db.subscriber.count({
-            where: { ...confirmationWhere, confirmationNeedsReview: true },
+            where: {
+              ...confirmationWhere,
+              OR: [
+                { confirmationNeedsReview: true },
+                { confirmationStatus: "unknown", confirmationRetryable: false },
+              ],
+            },
           }),
     ]);
     const state = dailyLimitReached

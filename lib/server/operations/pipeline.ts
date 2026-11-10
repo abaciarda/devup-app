@@ -10,6 +10,7 @@ import {
 import { refreshSources } from "../sources/refresh";
 import { generateIssue } from "../issues/generate";
 import { runDelivery } from "../delivery/send";
+import { unfinishedIssueSend } from "../delivery/storage";
 import { refreshPublishedIssueCache } from "../issues/cache";
 import { publishMorningEdition } from "./automatic-publication";
 import { inPreparationWindow, publicationTimeReached } from "./schedule";
@@ -54,16 +55,7 @@ export async function runPipeline(
             deliveryStartedAt: { not: null },
             deliveryFinishedAt: null,
             editionDate: { lte: editionDateForNow(now) },
-            sendLogs: {
-              none: {
-                OR: [
-                  { status: "pending" },
-                  { status: "unknown" },
-                  { retryable: true },
-                  { needsReview: true },
-                ],
-              },
-            },
+            sendLogs: { none: unfinishedIssueSend },
           },
           data: { deliveryFinishedAt: now },
         }),

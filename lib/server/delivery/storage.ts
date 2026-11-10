@@ -2,14 +2,20 @@ import "server-only";
 import { z } from "zod";
 import type { Prisma } from "../../../generated/prisma/client";
 import { frozenEmailSchema, type FrozenEmail } from "../../email/contracts";
-import {
-  deliveryDecision,
-  maxDeliveryAttempts,
-  retryWindowMs,
-} from "./policy";
+import { deliveryDecision, maxDeliveryAttempts, retryWindowMs } from "./policy";
 import type { ProviderOutcome } from "./resend-provider";
 
 export type DeliveryRef = { kind: "issue" | "confirmation"; id: string };
+
+export const unfinishedIssueSend = {
+  OR: [
+    { status: "pending" },
+    { status: "unknown" },
+    { retryable: true },
+    { needsReview: true },
+  ],
+} satisfies Prisma.SendLogWhereInput;
+
 type State = {
   status: string | null;
   attempts: number;
@@ -400,15 +406,7 @@ export async function finishIssueDelivery(
   now = new Date(),
 ) {
   const outstanding = await tx.sendLog.count({
-    where: {
-      issueId,
-      OR: [
-        { status: "pending" },
-        { status: "unknown" },
-        { retryable: true },
-        { needsReview: true },
-      ],
-    },
+    where: { issueId, ...unfinishedIssueSend },
   });
   if (!outstanding)
     await tx.issue.updateMany({

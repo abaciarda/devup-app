@@ -90,6 +90,7 @@ async function main() {
           });
           assert.equal(subscriber.confirmationTokenHash, null);
           assert.equal(subscriber.confirmationPayload, null);
+          assert.equal(subscriber.confirmationStatus, "suppressed");
           const link = (purpose: "unsubscribe" | "preferences") =>
             verifySubscriberLink(
               createSubscriberLink(purpose, subscriber, env),
@@ -150,7 +151,22 @@ async function main() {
               .status,
             "pending",
           );
+          await tx.subscriber.update({
+            where: { email },
+            data: {
+              confirmationStatus: "unknown",
+              confirmationAttempts: 1,
+              confirmationRetryable: true,
+            },
+          });
           assert.ok(await confirmInTransaction(tx, next.token));
+          subscriber = await tx.subscriber.findUniqueOrThrow({
+            where: { email },
+          });
+          assert.equal(subscriber.status, "confirmed");
+          assert.equal(subscriber.confirmationStatus, "unknown");
+          assert.equal(subscriber.confirmationRetryable, false);
+          assert.equal(subscriber.confirmationNeedsReview, true);
           await tx.subscriber.update({
             where: { email },
             data: { status: "suppressed" },
